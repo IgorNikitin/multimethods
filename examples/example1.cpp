@@ -3,7 +3,7 @@
 using namespace std;
 
 struct asteroid {};
-struct spaceship : multimethods::base {};
+struct spaceship : multimethods::unknown {};
 struct big_spaceship : spaceship {};
 
 defgeneric(collide)

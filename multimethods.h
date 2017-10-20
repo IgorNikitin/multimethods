@@ -40,8 +40,8 @@
 namespace multimethods {
 
 /**********************************************************************************************/
-struct base {
-    virtual ~base() {}
+struct unknown {
+    virtual ~unknown() {}
 };
 
 
@@ -54,7 +54,7 @@ struct arg_exception {};
 
 /**********************************************************************************************/
 class arg {
-    base* base_;
+    unknown* base_;
     bool const_;
     void* p_;
     std::type_index type_;
@@ -62,7 +62,7 @@ class arg {
     public:
     template<class T, class = typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value>::type>
     arg(T& v)
-    : base_(dynamic_cast<base*>(&v))
+    : base_(dynamic_cast<unknown*>(&v))
     , const_(std::is_const<T>::value)
     , p_(const_cast<void*>(reinterpret_cast<const void*>(&v)))
     , type_(typeid(v)) {
@@ -114,20 +114,20 @@ struct function_traits_impl;
 
 /**********************************************************************************************/
 template<class R>
-struct function_traits_impl<R (*)()> {
+struct function_traits_impl<R(*)()> {
     enum { arity = 0 };
 };
 
 /**********************************************************************************************/
 template<class R, class T1>
-struct function_traits_impl<R (*)(T1)> {
+struct function_traits_impl<R(*)(T1)> {
     enum { arity = 1 };
     typedef T1 arg1_type;
 };
 
 /**********************************************************************************************/
 template<class R, class T1, class T2>
-struct function_traits_impl<R (*)(T1, T2)> {
+struct function_traits_impl<R(*)(T1, T2)> {
     enum { arity = 2 };
     typedef T1 arg1_type;
     typedef T2 arg2_type;
@@ -135,7 +135,7 @@ struct function_traits_impl<R (*)(T1, T2)> {
 
 /**********************************************************************************************/
 template<class R, class T1, class T2, class T3>
-struct function_traits_impl<R (*)(T1, T2, T3)> {
+struct function_traits_impl<R(*)(T1, T2, T3)> {
     enum { arity = 3 };
     typedef T1 arg1_type;
     typedef T2 arg2_type;
@@ -144,7 +144,7 @@ struct function_traits_impl<R (*)(T1, T2, T3)> {
 
 /**********************************************************************************************/
 template<class R, class T1, class T2, class T3, class T4>
-struct function_traits_impl<R (*)(T1, T2, T3, T4)> {
+struct function_traits_impl<R(*)(T1, T2, T3, T4)> {
     enum { arity = 4 };
     typedef T1 arg1_type;
     typedef T2 arg2_type;
