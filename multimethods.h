@@ -1,8 +1,8 @@
 /**********************************************************************************************/
-/* multimethods.h                                                         					  */
-/*                                                                       					  */
-/* Igor Nikitin, 2017.                   													  */
-/* Public domain.                                                          					  */
+// multimethods.h
+//
+// Igor Nikitin, 2017.
+// Public domain.
 /**********************************************************************************************/
 
 // STD
@@ -114,53 +114,47 @@ struct function_traits_impl;
 
 /**********************************************************************************************/
 template<class R>
-struct function_traits_impl<R (*)()>
-{
-  enum { arity = 0 };
+struct function_traits_impl<R (*)()> {
+    enum { arity = 0 };
 };
 
 /**********************************************************************************************/
 template<class R, class T1>
-struct function_traits_impl<R (*)(T1)>
-{
-  enum { arity = 1 };
-  typedef T1 arg1_type;
+struct function_traits_impl<R (*)(T1)> {
+    enum { arity = 1 };
+    typedef T1 arg1_type;
 };
 
 /**********************************************************************************************/
 template<class R, class T1, class T2>
-struct function_traits_impl<R (*)(T1, T2)>
-{
-  enum { arity = 2 };
-  typedef T1 arg1_type;
-  typedef T2 arg2_type;
+struct function_traits_impl<R (*)(T1, T2)> {
+    enum { arity = 2 };
+    typedef T1 arg1_type;
+    typedef T2 arg2_type;
 };
 
 /**********************************************************************************************/
 template<class R, class T1, class T2, class T3>
-struct function_traits_impl<R (*)(T1, T2, T3)>
-{
-  enum { arity = 3 };
-  typedef T1 arg1_type;
-  typedef T2 arg2_type;
-  typedef T3 arg3_type;
+struct function_traits_impl<R (*)(T1, T2, T3)> {
+    enum { arity = 3 };
+    typedef T1 arg1_type;
+    typedef T2 arg2_type;
+    typedef T3 arg3_type;
 };
 
 /**********************************************************************************************/
 template<class R, class T1, class T2, class T3, class T4>
-struct function_traits_impl<R (*)(T1, T2, T3, T4)>
-{
-  enum { arity = 4 };
-  typedef T1 arg1_type;
-  typedef T2 arg2_type;
-  typedef T3 arg3_type;
-  typedef T4 arg4_type;
+struct function_traits_impl<R (*)(T1, T2, T3, T4)> {
+    enum { arity = 4 };
+    typedef T1 arg1_type;
+    typedef T2 arg2_type;
+    typedef T3 arg3_type;
+    typedef T4 arg4_type;
 };
 
 /**********************************************************************************************/
 template<typename F>
-struct function_traits :
-  public function_traits_impl<typename std::add_pointer<F>::type> {
+struct function_traits : public function_traits_impl<typename std::add_pointer<F>::type> {
 };
 
 
