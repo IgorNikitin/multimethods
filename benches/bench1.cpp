@@ -1,6 +1,6 @@
 #include <ctime>
 #include <iostream>
-#include "multimethods.h"
+#include <multimethods.h>
 using namespace std;
 
 struct asteroid {};
