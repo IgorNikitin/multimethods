@@ -10,9 +10,9 @@
 #include <vector>
 
 /**********************************************************************************************/
-#define defgeneric(name) \
+#define declare_method(name) \
     struct _mm_ ## name { \
-        static inline std::vector<multimethods::detail::i_method*> funcs_; \
+        static inline std::vector<::multimethods::detail::i_method*> funcs_; \
     }; \
     template<class... Args> inline \
     void name(Args&&... args) { \
@@ -20,16 +20,18 @@
             try { \
                 m->call(args...); \
                 return; \
-            } catch(multimethods::detail::arg_exception&) { \
+            } catch(::multimethods::not_match&) { \
             } \
         throw std::logic_error( #name ": not implemented."); \
     } \
 
 /**********************************************************************************************/
-#define defmethod(name, ...) \
+#define define_method(name, ...) \
    static void MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
-   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_ ## name ::funcs_.push_back(multimethods::detail::make_method(MM_JOIN(_mm_impl_, __LINE__))); return true; }(); \
+   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_ ## name ::funcs_.push_back(::multimethods::detail::make_method(MM_JOIN(_mm_impl_, __LINE__))); return true; }(); \
    static void MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
+
+#define skip_method throw ::multimethods::not_match();
 
 /**********************************************************************************************/
 #define MM_JOIN(x, y) MM_JOIN_AGAIN(x, y)
@@ -40,6 +42,11 @@
 namespace multimethods {
 
 /**********************************************************************************************/
+struct not_match : std::exception {
+    virtual const char* what() const noexcept { return "multimethods::not_match"; }
+};
+
+/**********************************************************************************************/
 struct unknown {
     virtual ~unknown() {}
 };
@@ -47,9 +54,6 @@ struct unknown {
 
 /**********************************************************************************************/
 namespace detail {
-
-/**********************************************************************************************/
-struct arg_exception {};
 
 
 /**********************************************************************************************/
@@ -84,7 +88,7 @@ class arg {
             if(auto p = dynamic_cast<typename std::decay<T>::type*>(base_))
                 return *p;
         }
-        throw arg_exception();
+        throw not_match();
     }
 
     template<class T>
@@ -93,18 +97,18 @@ class arg {
             if(type_ == typeid(T))
                 return *reinterpret_cast<typename std::remove_reference<T>::type*>(p_);
         }
-        throw arg_exception();
+        throw not_match();
     }
 };
 
 /**********************************************************************************************/
 struct i_method {
     virtual ~i_method() {}
-    virtual void call() { throw arg_exception();; }
-    virtual void call(arg) { throw arg_exception();; }
-    virtual void call(arg, arg) { throw arg_exception();; }
-    virtual void call(arg, arg, arg) { throw arg_exception();; }
-    virtual void call(arg, arg, arg, arg) { throw arg_exception();; }
+    virtual void call() { throw not_match();; }
+    virtual void call(arg) { throw not_match();; }
+    virtual void call(arg, arg) { throw not_match();; }
+    virtual void call(arg, arg, arg) { throw not_match();; }
+    virtual void call(arg, arg, arg, arg) { throw not_match();; }
 };
 
 
