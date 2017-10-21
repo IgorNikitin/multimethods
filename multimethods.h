@@ -109,7 +109,7 @@ struct arg final {
     unknown* base_;
     bool const_;
     void* p_;
-    std::type_index type_;
+    const std::type_index type_;
 
     // Constructs from polymorphic value - we can try to cast it to the 'unknown' now,
     // and cast to a destination class later.
@@ -134,10 +134,10 @@ struct arg final {
     template<class T>
     auto cast() -> typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value, typename std::remove_reference<T>::type*>::type {
         if(std::is_const<T>::value || !const_ ) {
-            if(type_ == typeid(T))
-                return reinterpret_cast<typename std::remove_reference<T>::type*>(p_);
             if(auto p = dynamic_cast<typename std::decay<T>::type*>(base_))
                 return p;
+            if(!base_ && type_ == typeid(T))
+                return reinterpret_cast<typename std::remove_reference<T>::type*>(p_);
         }
         return nullptr;
     }
@@ -146,7 +146,7 @@ struct arg final {
     template<class T>
     auto cast() -> typename std::enable_if<!std::is_polymorphic<typename std::decay<T>::type>::value, typename std::remove_reference<T>::type*>::type {
         if(std::is_const<T>::value || !const_ ) {
-            if(type_ == typeid(T))
+            if(!base_ && type_ == typeid(T))
                 return reinterpret_cast<typename std::remove_reference<T>::type*>(p_);
         }
         return nullptr;
