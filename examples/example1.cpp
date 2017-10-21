@@ -6,7 +6,7 @@ struct asteroid {};
 struct spaceship : multimethods::unknown {};
 struct spaceship_big : spaceship {};
 
-declare_method(collide, void)
+declare_method(collide)
 define_method(collide, asteroid&, spaceship_big&) { cout << "Big boom!.\n"; }
 define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
 define_method(collide, spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }

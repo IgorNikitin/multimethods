@@ -5,21 +5,24 @@
 // Public domain.
 /**********************************************************************************************/
 
+#include <stdexcept>
 #include <typeindex>
 #include <vector>
 
+
 /**********************************************************************************************/
-// Declares a new multimethod and specifies it's result type.
+// Declares a new multimethod and specifies it's result type (void by default).
 //
-//   declare_method(collide, void)
+//   declare_method(collide)
+//   declare_method(concat, string)
 //
-#define declare_method(name, type) \
-    using _mm_r_ ## name = type; \
+#define declare_method(name, ...) \
+    using _mm_r_ ## name = ::multimethods::detail::method_type<__VA_ARGS__>::type; \
     struct _mm_f_ ## name { \
-        static inline std::vector<::multimethods::detail::abstract_method<type>*> funcs_; \
+        static inline std::vector<::multimethods::detail::abstract_method<_mm_r_ ## name>*> funcs_; \
     }; \
     template<class... Args> inline \
-    type name(Args&&... args) { \
+    _mm_r_ ## name name(Args&&... args) { \
         for( auto m : _mm_f_ ## name ::funcs_ ) \
             try { \
                 return m->call(args...); \
@@ -262,6 +265,13 @@ template<class T, auto F> inline
 auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 4, abstract_method<T>*>::type {
     return new method_4<T, F>();
 }
+
+
+/**********************************************************************************************/
+template<class T=void>
+struct method_type {
+    using type=T;
+};
 
 /**********************************************************************************************/
 } }
