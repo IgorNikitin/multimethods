@@ -172,12 +172,12 @@ template<class T>
 struct abstract_method {
     using ret_t = typename std::conditional<std::is_same<T, void>::value, bool, std::optional<T>>::type;
     virtual ~abstract_method() {}
-    virtual ret_t call() { throw not_match(); }
-    virtual ret_t call(arg) { throw not_match(); }
-    virtual ret_t call(arg, arg) { throw not_match(); }
-    virtual ret_t call(arg, arg, arg) { throw not_match(); }
-    virtual ret_t call(arg, arg, arg, arg) { throw not_match(); }
-    virtual ret_t call(arg, arg, arg, arg, arg) { throw not_match(); }
+    virtual ret_t call() { return {}; }
+    virtual ret_t call(arg) { return {}; }
+    virtual ret_t call(arg, arg) { return {}; }
+    virtual ret_t call(arg, arg, arg) { return {}; }
+    virtual ret_t call(arg, arg, arg, arg) { return {}; }
+    virtual ret_t call(arg, arg, arg, arg, arg) { return {}; }
 };
 
 
