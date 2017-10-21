@@ -9,10 +9,14 @@
 #include <vector>
 
 /**********************************************************************************************/
+// Declares a new multimethod and specifies it's result type.
+//
+//   declare_method(collide, void)
+//
 #define declare_method(name, type) \
     using _mm_r_ ## name = type; \
     struct _mm_f_ ## name { \
-        static inline std::vector<::multimethods::detail::i_method<type>*> funcs_; \
+        static inline std::vector<::multimethods::detail::abstract_method<type>*> funcs_; \
     }; \
     template<class... Args> inline \
     type name(Args&&... args) { \
@@ -25,27 +29,42 @@
     } \
 
 /**********************************************************************************************/
+// Adds implementation of a multimethod.
+//
+//   declare_method(collide, void)
+//   define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
+//
 #define define_method(name, ...) \
    static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
    static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_f_ ## name ::funcs_.push_back(::multimethods::detail::make_method<_mm_r_ ## name, MM_JOIN(_mm_impl_, __LINE__)>()); return true; }(); \
    static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
 
-#define skip_method throw ::multimethods::not_match();
-
 /**********************************************************************************************/
-#define MM_JOIN(x, y) MM_JOIN_AGAIN(x, y)
-#define MM_JOIN_AGAIN(x, y) x ## y
+// Skip current method in runtime to search for more suitable implementation.
+//
+//   define_method(mm_abs, int n) { if(n > 0) skip_method; return -n; }
+//
+#define skip_method throw ::multimethods::not_match();
 
 
 /**********************************************************************************************/
 namespace multimethods {
 
 /**********************************************************************************************/
+// Exception to skip a method and try next one.
+//
 struct not_match : std::exception {
     virtual const char* what() const noexcept { return "multimethods::not_match"; }
 };
 
 /**********************************************************************************************/
+// Base class to use with user's classes to dispatch over base classes.
+//
+// struct spaceship : multimethods::unknown {};
+// struct spaceship_big : spaceship {};
+// ...
+// define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
+//
 struct unknown {
     virtual ~unknown() {}
 };
@@ -55,13 +74,16 @@ struct unknown {
 namespace detail {
 
 /**********************************************************************************************/
-class arg {
+// Class to store reference to an argument and cast it on call an implementation.
+//
+struct arg {
     unknown* base_;
     bool const_;
     void* p_;
     std::type_index type_;
 
-    public:
+    // Constructs from polymorphic value - we can try to cast it to the 'unknown' now,
+    // and cast to a destination class later.
     template<class T, class = typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value>::type>
     arg(T& v)
     : base_(dynamic_cast<unknown*>(&v))
@@ -70,6 +92,7 @@ class arg {
     , type_(typeid(v)) {
     }
 
+    // Constructs from non-polymorphic value.
     template<class T, class = typename std::enable_if<!std::is_polymorphic<typename std::decay<T>::type>::value>::type, class U = T>
     arg(T& v)
     : base_(nullptr)
@@ -78,6 +101,7 @@ class arg {
     , type_(typeid(v)) {
     }
 
+    // Cast to a polymorphic type
     template<class T>
     auto cast() -> typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value, T&>::type {
         if(std::is_const<T>::value || !const_ ) {
@@ -89,6 +113,7 @@ class arg {
         throw not_match();
     }
 
+    // Cast to a non-polymorphic type
     template<class T>
     auto cast() -> typename std::enable_if<!std::is_polymorphic<typename std::decay<T>::type>::value, T&>::type {
         if(std::is_const<T>::value || !const_ ) {
@@ -100,9 +125,11 @@ class arg {
 };
 
 /**********************************************************************************************/
+// Base class for methods' implementations.
+//
 template<class T>
-struct i_method {
-    virtual ~i_method() {}
+struct abstract_method {
+    virtual ~abstract_method() {}
     virtual T call() { throw not_match(); }
     virtual T call(arg) { throw not_match(); }
     virtual T call(arg, arg) { throw not_match(); }
@@ -163,13 +190,13 @@ struct function_traits : public function_traits_impl<typename std::add_pointer<F
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_0 : i_method<T> {
+struct method_0 : abstract_method<T> {
     T call() { return F(); }
 };
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_1 : i_method<T> {
+struct method_1 : abstract_method<T> {
     T call(arg p) {
         return F(p.cast<typename function_traits<decltype(*F)>::arg1_type>());
     }
@@ -177,7 +204,7 @@ struct method_1 : i_method<T> {
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_2 : i_method<T> {
+struct method_2 : abstract_method<T> {
     T call(arg p1, arg p2) {
         return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
                  p2.cast<typename function_traits<decltype(*F)>::arg2_type>());
@@ -186,7 +213,7 @@ struct method_2 : i_method<T> {
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_3 : i_method<T> {
+struct method_3 : abstract_method<T> {
     T call(arg p1, arg p2, arg p3) {
         return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
                  p2.cast<typename function_traits<decltype(*F)>::arg2_type>(),
@@ -196,7 +223,7 @@ struct method_3 : i_method<T> {
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_4 : i_method<T> {
+struct method_4 : abstract_method<T> {
     T call(arg p1, arg p2, arg p3, arg p4) {
         return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
                  p2.cast<typename function_traits<decltype(*F)>::arg2_type>(),
@@ -208,34 +235,39 @@ struct method_4 : i_method<T> {
 
 /**********************************************************************************************/
 template<class T, auto F> inline
-auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 0, i_method<T>*>::type {
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 0, abstract_method<T>*>::type {
     return new method_0<T, F>();
 }
 
 /**********************************************************************************************/
 template<class T, auto F> inline
-auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 1, i_method<T>*>::type {
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 1, abstract_method<T>*>::type {
     return new method_1<T, F>();
 }
 
 /**********************************************************************************************/
 template<class T, auto F> inline
-auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 2, i_method<T>*>::type {
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 2, abstract_method<T>*>::type {
     return new method_2<T, F>();
 }
 
 /**********************************************************************************************/
 template<class T, auto F> inline
-auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 3, i_method<T>*>::type {
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 3, abstract_method<T>*>::type {
     return new method_3<T, F>();
 }
 
 /**********************************************************************************************/
 template<class T, auto F> inline
-auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 4, i_method<T>*>::type {
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 4, abstract_method<T>*>::type {
     return new method_4<T, F>();
 }
 
-
 /**********************************************************************************************/
 } }
+
+/**********************************************************************************************/
+// Helper macros for 'define_method' macro.
+//
+#define MM_JOIN(x, y) MM_JOIN_AGAIN(x, y)
+#define MM_JOIN_AGAIN(x, y) x ## y
