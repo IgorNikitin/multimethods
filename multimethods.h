@@ -5,19 +5,18 @@
 // Public domain.
 /**********************************************************************************************/
 
-// STD
 #include <typeindex>
 #include <vector>
 
 /**********************************************************************************************/
 #define declare_method(name, type) \
-    using _mt_ ## name = type; \
-    struct _mm_ ## name { \
+    using _mm_r_ ## name = type; \
+    struct _mm_f_ ## name { \
         static inline std::vector<::multimethods::detail::i_method<type>*> funcs_; \
     }; \
     template<class... Args> inline \
     type name(Args&&... args) { \
-        for( auto& m : _mm_ ## name ::funcs_ ) \
+        for( auto m : _mm_f_ ## name ::funcs_ ) \
             try { \
                 return m->call(args...); \
             } catch(::multimethods::not_match&) { \
@@ -27,9 +26,9 @@
 
 /**********************************************************************************************/
 #define define_method(name, ...) \
-   static _mt_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
-   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_ ## name ::funcs_.push_back(::multimethods::detail::make_method<_mt_ ## name>(MM_JOIN(_mm_impl_, __LINE__))); return true; }(); \
-   static _mt_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
+   static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
+   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_f_ ## name ::funcs_.push_back(::multimethods::detail::make_method<_mm_r_ ## name>(MM_JOIN(_mm_impl_, __LINE__))); return true; }(); \
+   static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
 
 #define skip_method throw ::multimethods::not_match();
 
@@ -54,7 +53,6 @@ struct unknown {
 
 /**********************************************************************************************/
 namespace detail {
-
 
 /**********************************************************************************************/
 class arg {
@@ -105,11 +103,11 @@ class arg {
 template<class T>
 struct i_method {
     virtual ~i_method() {}
-    virtual T call() { throw not_match();; }
-    virtual T call(arg) { throw not_match();; }
-    virtual T call(arg, arg) { throw not_match();; }
-    virtual T call(arg, arg, arg) { throw not_match();; }
-    virtual T call(arg, arg, arg, arg) { throw not_match();; }
+    virtual T call() { throw not_match(); }
+    virtual T call(arg) { throw not_match(); }
+    virtual T call(arg, arg) { throw not_match(); }
+    virtual T call(arg, arg, arg) { throw not_match(); }
+    virtual T call(arg, arg, arg, arg) { throw not_match(); }
 };
 
 
@@ -252,7 +250,6 @@ template<class T, class F> inline
 auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 4, i_method<T>*>::type {
     return new method_4<T, F>(f);
 }
-
 
 /**********************************************************************************************/
 } }
