@@ -3,23 +3,29 @@
 using namespace std;
 
 struct asteroid {};
-struct spaceship : multimethods::unknown {};
-struct big_spaceship : spaceship {};
 
-defgeneric(collide)
-defmethod(collide, asteroid&, spaceship&)        { cout << "BOOM!!!" << endl; }
-defmethod(collide, spaceship&, const spaceship&) { cout << "Knock, knock." << endl; }
-defmethod(collide, int x, int y, int z)          { cout << x + y + z << endl; }
-defmethod(collide, string s, big_spaceship&)     { cout << s << endl; }
+struct spaceship : multimethods::unknown {
+    virtual bool is_big() const { return false; }
+};
+
+struct spaceship_big : spaceship {
+    bool is_big() const override { return true; }
+};
+
+declare_method(collide)
+define_method(collide, asteroid&, spaceship&)            { cout << "BOOM!" << endl; }
+define_method(collide, spaceship&, const spaceship& s)   { cout << "Knock, knock." << endl; if(s.is_big()) skip_method; }
+define_method(collide, spaceship&, const spaceship_big&) { cout << "KNOCK, KNOCK." << endl; }
+define_method(collide, int x, int y, int z)              { cout << x + y + z << endl; }
+define_method(collide, string s, spaceship_big&)         { cout << s << endl; }
 
 int main() {
    asteroid a;
    spaceship s1, s2;
-   big_spaceship bs;
+   spaceship_big bs;
 
    collide(a, s1);
-   collide(a, bs);
-   collide(s2, s1);
+   collide(s2, bs);
    collide(1, 2, 3);
-   collide(string("Hello!"), static_cast<spaceship&>(bs));
+   collide("Hello."s, bs);
 }
