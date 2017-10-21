@@ -18,21 +18,21 @@
 //   declare_method(concat, string)
 //
 #define declare_method(name, ...) \
-    using _mm_r_ ## name = ::multimethods::detail::method_type<__VA_ARGS__>::type; \
-    struct _mm_f_ ## name { \
-        static inline std::vector<::multimethods::detail::abstract_method<_mm_r_ ## name>*> funcs_; \
-        static inline _mm_r_ ## name(*fallback_)() { nullptr }; \
+    using g_mm_r_ ## name = ::multimethods::detail::method_type<__VA_ARGS__>::type; \
+    struct g_mm_f_ ## name { \
+        static inline std::vector<::multimethods::detail::abstract_method<g_mm_r_ ## name>*> funcs_; \
+        static inline g_mm_r_ ## name(*fallback_)() { nullptr }; \
     }; \
     template<class... Args> inline \
-    _mm_r_ ## name name(Args&&... args) { \
-        for( auto m : _mm_f_ ## name ::funcs_ ) \
+    g_mm_r_ ## name name(Args&&... args) { \
+        for( auto m : g_mm_f_ ## name ::funcs_ ) \
             try { \
                 if(auto r = m->call(args...)) \
-                    return ::multimethods::detail::method_result<_mm_r_ ## name>::unwrap(r); \
+                    return ::multimethods::detail::method_result<g_mm_r_ ## name>::unwrap(r); \
             } catch(::multimethods::not_match&) { \
             } \
-        return _mm_f_ ## name ::fallback_ \
-            ? (*_mm_f_ ## name ::fallback_)() \
+        return g_mm_f_ ## name ::fallback_ \
+            ? (*g_mm_f_ ## name ::fallback_)() \
             : throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
 
@@ -43,9 +43,9 @@
 //   define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
 //
 #define define_method(name, ...) \
-   static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
-   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_f_ ## name ::funcs_.push_back(::multimethods::detail::make_method<_mm_r_ ## name, MM_JOIN(_mm_impl_, __LINE__)>()); return true; }(); \
-   static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
+   static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
+   static bool MM_JOIN(_mm_init_, __LINE__) = []{ g_mm_f_ ## name ::funcs_.push_back(::multimethods::detail::make_method<g_mm_r_ ## name, MM_JOIN(_mm_impl_, __LINE__)>()); return true; }(); \
+   static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
 
 /**********************************************************************************************/
 // Adds fallback handler for a multimethod.
@@ -54,9 +54,9 @@
 //   define_method_fallback(collide) { cout << "All is fine.\n"; }
 //
 #define define_method_fallback(name) \
-   static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(); \
-   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_f_ ## name ::fallback_ = MM_JOIN(_mm_impl_, __LINE__); return true; }(); \
-   static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)()
+   static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(); \
+   static bool MM_JOIN(_mm_init_, __LINE__) = []{ g_mm_f_ ## name ::fallback_ = MM_JOIN(_mm_impl_, __LINE__); return true; }(); \
+   static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)()
 
 /**********************************************************************************************/
 // Skip current method in runtime to search for more suitable implementation.
