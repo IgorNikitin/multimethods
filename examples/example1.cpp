@@ -40,6 +40,6 @@ int main() {
    cout << join("Hello,"s, " world."s) << endl;
    cout << join(a, s1) << endl;
 
-   cout << mm_abs( -10 ) << endl;
-   cout << mm_abs( 10 ) << endl;
+   cout << mm_abs(-10) << endl;
+   cout << mm_abs(10) << endl;
 }
