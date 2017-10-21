@@ -103,6 +103,9 @@ struct unknown {
 namespace detail {
 
 /**********************************************************************************************/
+static inline const std::type_index g_dummy_type_index( typeid(int) );
+
+/**********************************************************************************************/
 // Class to store reference to an argument and cast it on call an implementation.
 //
 struct arg final {
@@ -113,16 +116,25 @@ struct arg final {
 
     // Constructs from polymorphic value - we can try to cast it to the 'unknown' now,
     // and cast to a destination class later.
-    template<class T, class = typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value>::type>
+    template<class T, class = typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value && !std::is_base_of<unknown, T>::value>::type>
     arg(T& v)
-    : base_(dynamic_cast<unknown*>(&v))
+    : base_(const_cast<unknown*>(dynamic_cast<const unknown*>(&v)))
     , const_(std::is_const<T>::value)
     , p_(const_cast<void*>(reinterpret_cast<const void*>(&v)))
     , type_(typeid(v)) {
     }
 
+    // Constructs from polymorphic value - we can try to cast it to the 'unknown' now,
+    // and cast to a destination class later.
+    template<class T, class = typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value && std::is_base_of<unknown, T>::value>::type, class = void>
+    arg(T& v)
+    : base_(const_cast<unknown*>(static_cast<const unknown*>(&v)))
+    , const_(std::is_const<T>::value)
+    , type_(g_dummy_type_index) {
+    }
+
     // Constructs from non-polymorphic value.
-    template<class T, class = typename std::enable_if<!std::is_polymorphic<typename std::decay<T>::type>::value>::type, class U = T>
+    template<class T, class = typename std::enable_if<!std::is_polymorphic<typename std::decay<T>::type>::value>::type, class = void, class = void>
     arg(T& v)
     : base_(nullptr)
     , const_(std::is_const<T>::value)
@@ -133,7 +145,7 @@ struct arg final {
     // Cast to a polymorphic type
     template<class T>
     auto cast() -> typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value, typename std::remove_reference<T>::type*>::type {
-        if(std::is_const<T>::value || !const_ ) {
+        if(std::is_const<typename std::remove_reference<T>::type>::value || !const_ ) {
             if(auto p = dynamic_cast<typename std::decay<T>::type*>(base_))
                 return p;
             if(!base_ && type_ == typeid(T))
@@ -145,7 +157,7 @@ struct arg final {
     // Cast to a non-polymorphic type
     template<class T>
     auto cast() -> typename std::enable_if<!std::is_polymorphic<typename std::decay<T>::type>::value, typename std::remove_reference<T>::type*>::type {
-        if(std::is_const<T>::value || !const_ ) {
+        if(std::is_const<typename std::remove_reference<T>::type>::value || !const_ ) {
             if(!base_ && type_ == typeid(T))
                 return reinterpret_cast<typename std::remove_reference<T>::type*>(p_);
         }

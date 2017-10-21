@@ -4,8 +4,8 @@
 using namespace std;
 
 struct base : public multimethods::unknown {};
-struct asteroid : public base {};
-struct spaceship : public base {};
+struct asteroid : base {};
+struct spaceship : base {};
 
 declare_method(collide)
 define_method(collide, asteroid&, asteroid&) {}
