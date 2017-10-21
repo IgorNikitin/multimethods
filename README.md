@@ -16,6 +16,11 @@ Multimethods for C++17
 * мінімум кода для використання;
 * бібліотека дуже мала (кількасот рядків) і міститься у одному заголовному файлі.
 
+Важлива інформація:
+
+* метод, що реалізован вище по коду, має більший пріорітет;
+* якщо треба диспетчеризація за базовим класом, то наслідуйте його від multimethods::unknown (див. examples/example3.cpp).
+
 Приклад використання:
 
 ```C++
@@ -28,7 +33,7 @@ struct spaceship : multimethods::unknown {};
 struct spaceship_big : spaceship {};
 
 declare_method(collide)
-define_method(collide, asteroid&, spaceship_big&) { cout << "Big boom!.\n"; }
+define_method(collide, asteroid&, spaceship_big&) { cout << "Big boom!\n"; }
 define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
 define_method(collide, spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }
 
@@ -46,22 +51,21 @@ int main() {
    spaceship s1, s2;
    spaceship_big bs;
 
-   collide(a, s1);
-   collide(a, bs);
-   collide(s2, bs);
+   collide(a, s1); // Boom!
+   collide(a, bs); // Big boom!
+   collide(s2, bs); // Knock, knock.
 
    try {
        collide(a, true);
    } catch(multimethods::not_implemented& e) {
-       cout << e.what() << endl;
+       cout << e.what() << endl; // collide: not_implemented
    }
 
-   cout << join() << endl;
-   cout << join(1, 2, 3) << endl;
-   cout << join("Hello,"s, " world."s) << endl;
-   cout << join(a, s1) << endl;
+   cout << join(1, 2, 3) << endl; // 123
+   cout << join("Hello,"s, " world."s) << endl; // Hello, world.
+   cout << join(a, s1) << endl; // Fallback.
 
-   cout << mm_abs(-10) << endl;
-   cout << mm_abs(10) << endl;
+   cout << mm_abs(-10) << endl; // 10
+   cout << mm_abs(10) << endl; // 10
 }
 ```
