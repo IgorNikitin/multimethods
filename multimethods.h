@@ -177,6 +177,7 @@ struct abstract_method {
     virtual ret_t call(arg, arg) { throw not_match(); }
     virtual ret_t call(arg, arg, arg) { throw not_match(); }
     virtual ret_t call(arg, arg, arg, arg) { throw not_match(); }
+    virtual ret_t call(arg, arg, arg, arg, arg) { throw not_match(); }
 };
 
 
@@ -227,6 +228,17 @@ struct function_traits_impl<R(*)(T1, T2, T3, T4)> {
     using arg2_type = T2;
     using arg3_type = T3;
     using arg4_type = T4;
+};
+
+template<class R, class T1, class T2, class T3, class T4, class T5>
+struct function_traits_impl<R(*)(T1, T2, T3, T4, T5)> {
+    enum { arity = 5 };
+    using ret_type = R;
+    using arg1_type = T1;
+    using arg2_type = T2;
+    using arg3_type = T3;
+    using arg4_type = T4;
+    using arg5_type = T5;
 };
 
 /**********************************************************************************************/
@@ -339,6 +351,34 @@ struct method_4_void final : abstract_method<T> {
     }
 };
 
+/**********************************************************************************************/
+template<class T, auto F>
+struct method_5 final : abstract_method<T> {
+    typename abstract_method<T>::ret_t call(arg p1, arg p2, arg p3, arg p4, arg p5) {
+        if(auto u1 = p1.template cast<typename function_traits<decltype(*F)>::arg1_type>())
+            if(auto u2 = p2.template cast<typename function_traits<decltype(*F)>::arg2_type>())
+                if(auto u3 = p3.template cast<typename function_traits<decltype(*F)>::arg3_type>())
+                    if(auto u4 = p4.template cast<typename function_traits<decltype(*F)>::arg4_type>())
+                        if(auto u5 = p5.template cast<typename function_traits<decltype(*F)>::arg5_type>())
+                            return F(*u1, *u2, *u3, *u4, *u5);
+        return {};
+    }
+};
+
+/**********************************************************************************************/
+template<class T, auto F>
+struct method_5_void final : abstract_method<T> {
+    bool call(arg p1, arg p2, arg p3, arg p4) {
+        if(auto u1 = p1.template cast<typename function_traits<decltype(*F)>::arg1_type>())
+            if(auto u2 = p2.template cast<typename function_traits<decltype(*F)>::arg2_type>())
+                if(auto u3 = p3.template cast<typename function_traits<decltype(*F)>::arg3_type>())
+                    if(auto u4 = p4.template cast<typename function_traits<decltype(*F)>::arg4_type>())
+                        if(auto u5 = p4.template cast<typename function_traits<decltype(*F)>::arg5_type>())
+                            { F(*u1, *u2, *u3, *u4, *u5); return true; }
+        return false;
+    }
+};
+
 
 /**********************************************************************************************/
 template<class T, auto F> inline
@@ -400,6 +440,17 @@ auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::ari
     return new method_4_void<T, F>();
 }
 
+/**********************************************************************************************/
+template<class T, auto F> inline
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 5 && !std::is_same<void, typename function_traits<decltype(*F)>::ret_type>::value, abstract_method<T>*>::type {
+    return new method_5<T, F>();
+}
+
+/**********************************************************************************************/
+template<class T, auto F> inline
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 5 && std::is_same<void, typename function_traits<decltype(*F)>::ret_type>::value, abstract_method<T>*>::type {
+    return new method_5_void<T, F>();
+}
 
 /**********************************************************************************************/
 template<class T>
