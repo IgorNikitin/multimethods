@@ -10,16 +10,16 @@
 #include <vector>
 
 /**********************************************************************************************/
-#define declare_method(name) \
+#define declare_method(name, type) \
+    using _mt_ ## name = type; \
     struct _mm_ ## name { \
-        static inline std::vector<::multimethods::detail::i_method*> funcs_; \
+        static inline std::vector<::multimethods::detail::i_method<type>*> funcs_; \
     }; \
     template<class... Args> inline \
-    void name(Args&&... args) { \
+    type name(Args&&... args) { \
         for( auto& m : _mm_ ## name ::funcs_ ) \
             try { \
-                m->call(args...); \
-                return; \
+                return m->call(args...); \
             } catch(::multimethods::not_match&) { \
             } \
         throw std::logic_error( #name ": not implemented."); \
@@ -27,9 +27,9 @@
 
 /**********************************************************************************************/
 #define define_method(name, ...) \
-   static void MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
-   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_ ## name ::funcs_.push_back(::multimethods::detail::make_method(MM_JOIN(_mm_impl_, __LINE__))); return true; }(); \
-   static void MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
+   static _mt_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
+   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_ ## name ::funcs_.push_back(::multimethods::detail::make_method<_mt_ ## name>(MM_JOIN(_mm_impl_, __LINE__))); return true; }(); \
+   static _mt_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
 
 #define skip_method throw ::multimethods::not_match();
 
@@ -102,13 +102,14 @@ class arg {
 };
 
 /**********************************************************************************************/
+template<class T>
 struct i_method {
     virtual ~i_method() {}
-    virtual void call() { throw not_match();; }
-    virtual void call(arg) { throw not_match();; }
-    virtual void call(arg, arg) { throw not_match();; }
-    virtual void call(arg, arg, arg) { throw not_match();; }
-    virtual void call(arg, arg, arg, arg) { throw not_match();; }
+    virtual T call() { throw not_match();; }
+    virtual T call(arg) { throw not_match();; }
+    virtual T call(arg, arg) { throw not_match();; }
+    virtual T call(arg, arg, arg) { throw not_match();; }
+    virtual T call(arg, arg, arg, arg) { throw not_match();; }
 };
 
 
@@ -163,81 +164,93 @@ struct function_traits : public function_traits_impl<typename std::add_pointer<F
 
 
 /**********************************************************************************************/
-template<class F>
-struct method_0 : i_method {
+template<class T, class F>
+struct method_0 : i_method<T> {
     F f_;
     method_0(F f) : f_(f) {}
 
-    void call() { f_(); }
+    T call() { return f_(); }
 };
 
 /**********************************************************************************************/
-template<class F>
-struct method_1 : i_method {
+template<class T, class F>
+struct method_1 : i_method<T> {
     F f_;
     method_1(F f) : f_(f) {}
 
-    void call(arg p) {
-        f_(p.cast<typename function_traits<F>::arg1_type>());
+    T call(arg p) {
+        return f_(p.cast<typename function_traits<F>::arg1_type>());
     }
 };
 
 /**********************************************************************************************/
-template<class F>
-struct method_2 : i_method {
+template<class T, class F>
+struct method_2 : i_method<T> {
     F f_;
     method_2(F f) : f_(f) {}
 
-    void call(arg p1, arg p2) {
-        f_(p1.cast<typename function_traits<F>::arg1_type>(),
-           p2.cast<typename function_traits<F>::arg2_type>());
+    T call(arg p1, arg p2) {
+        return f_(p1.cast<typename function_traits<F>::arg1_type>(),
+                  p2.cast<typename function_traits<F>::arg2_type>());
     }
 };
 
 /**********************************************************************************************/
-template<class F>
-struct method_3 : i_method {
+template<class T, class F>
+struct method_3 : i_method<T> {
     F f_;
     method_3(F f) : f_(f) {}
 
-    void call(arg p1, arg p2, arg p3) {
-        f_(p1.cast<typename function_traits<F>::arg1_type>(),
-           p2.cast<typename function_traits<F>::arg2_type>(),
-           p3.cast<typename function_traits<F>::arg3_type>());
+    T call(arg p1, arg p2, arg p3) {
+        return f_(p1.cast<typename function_traits<F>::arg1_type>(),
+                  p2.cast<typename function_traits<F>::arg2_type>(),
+                  p3.cast<typename function_traits<F>::arg3_type>());
     }
 };
 
 /**********************************************************************************************/
-template<class F>
-struct method_4 : i_method {
+template<class T, class F>
+struct method_4 : i_method<T> {
     F f_;
     method_4(F f) : f_(f) {}
 
-    void call(arg p1, arg p2, arg p3, arg p4) {
-        f_(p1.cast<typename function_traits<F>::arg1_type>(),
-           p2.cast<typename function_traits<F>::arg2_type>(),
-           p3.cast<typename function_traits<F>::arg3_type>(),
-           p4.cast<typename function_traits<F>::arg4_type>());
+    T call(arg p1, arg p2, arg p3, arg p4) {
+        return f_(p1.cast<typename function_traits<F>::arg1_type>(),
+                  p2.cast<typename function_traits<F>::arg2_type>(),
+                  p3.cast<typename function_traits<F>::arg3_type>(),
+                  p4.cast<typename function_traits<F>::arg4_type>());
     }
 };
 
 
 /**********************************************************************************************/
-template<class F> inline
-auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 2, i_method*>::type {
-    return new method_2<F>(f);
+template<class T, class F> inline
+auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 0, i_method<T>*>::type {
+    return new method_0<T, F>(f);
 }
 
 /**********************************************************************************************/
-template<class F> inline
-auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 3, i_method*>::type {
-    return new method_3<F>(f);
+template<class T, class F> inline
+auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 1, i_method<T>*>::type {
+    return new method_1<T, F>(f);
 }
 
 /**********************************************************************************************/
-template<class F> inline
-auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 4, i_method*>::type {
-    return new method_4<F>(f);
+template<class T, class F> inline
+auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 2, i_method<T>*>::type {
+    return new method_2<T, F>(f);
+}
+
+/**********************************************************************************************/
+template<class T, class F> inline
+auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 3, i_method<T>*>::type {
+    return new method_3<T, F>(f);
+}
+
+/**********************************************************************************************/
+template<class T, class F> inline
+auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 4, i_method<T>*>::type {
+    return new method_4<T, F>(f);
 }
 
 
