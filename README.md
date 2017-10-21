@@ -32,10 +32,10 @@ define_method(collide, asteroid&, spaceship_big&) { cout << "Big boom!.\n"; }
 define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
 define_method(collide, spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }
 
-declare_method(concat, string)
-define_method(concat) { return ""s; }
-define_method(concat, int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
-define_method(concat, string s1, string s2) { return s1 + s2; }
+declare_method(join, string)
+define_method(join, int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
+define_method(join, string s1, string s2) { return s1 + s2; }
+define_method_fallback(join) { return "Fallback."; }
 
 declare_method(mm_abs, int)
 define_method(mm_abs, int n) { if(n > 0) skip_method; return -n; }
@@ -50,9 +50,16 @@ int main() {
    collide(a, bs);
    collide(s2, bs);
 
-   cout << concat() << endl;
-   cout << concat(1, 2, 3) << endl;
-   cout << concat("Hello,"s, " world."s) << endl;
+   try {
+       collide(a, true);
+   } catch(multimethods::not_implemented& e) {
+       cout << e.what() << endl;
+   }
+
+   cout << join() << endl;
+   cout << join(1, 2, 3) << endl;
+   cout << join("Hello,"s, " world."s) << endl;
+   cout << join(a, s1) << endl;
 
    cout << mm_abs( -10 ) << endl;
    cout << mm_abs( 10 ) << endl;
