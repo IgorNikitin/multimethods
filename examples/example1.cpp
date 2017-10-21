@@ -29,6 +29,12 @@ int main() {
    collide(a, bs);
    collide(s2, bs);
 
+   try {
+       collide(a, true);
+   } catch(multimethods::not_implemented& e) {
+       cout << e.what() << endl;
+   }
+
    cout << concat() << endl;
    cout << concat(1, 2, 3) << endl;
    cout << concat("Hello,"s, " world."s) << endl;
