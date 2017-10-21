@@ -5,7 +5,7 @@
 // Public domain.
 /**********************************************************************************************/
 
-#include <stdexcept>
+#include <string>
 #include <typeindex>
 #include <vector>
 
@@ -28,7 +28,7 @@
                 return m->call(args...); \
             } catch(::multimethods::not_match&) { \
             } \
-        throw std::logic_error( #name ": not implemented."); \
+        throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
 
 /**********************************************************************************************/
@@ -54,9 +54,19 @@
 namespace multimethods {
 
 /**********************************************************************************************/
+// Exception to notify about an unimplemented method.
+//
+struct not_implemented final : std::exception {
+    std::string name_;
+    not_implemented(const char* name) : name_(name) {}
+
+    virtual const char* what() const noexcept { return name_.c_str(); }
+};
+
+/**********************************************************************************************/
 // Exception to skip a method and try next one.
 //
-struct not_match : std::exception {
+struct not_match final : std::exception {
     virtual const char* what() const noexcept { return "multimethods::not_match"; }
 };
 
@@ -79,7 +89,7 @@ namespace detail {
 /**********************************************************************************************/
 // Class to store reference to an argument and cast it on call an implementation.
 //
-struct arg {
+struct arg final {
     unknown* base_;
     bool const_;
     void* p_;
@@ -193,13 +203,13 @@ struct function_traits : public function_traits_impl<typename std::add_pointer<F
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_0 : abstract_method<T> {
+struct method_0 final : abstract_method<T> {
     T call() { return F(); }
 };
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_1 : abstract_method<T> {
+struct method_1 final : abstract_method<T> {
     T call(arg p) {
         return F(p.cast<typename function_traits<decltype(*F)>::arg1_type>());
     }
@@ -207,7 +217,7 @@ struct method_1 : abstract_method<T> {
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_2 : abstract_method<T> {
+struct method_2 final : abstract_method<T> {
     T call(arg p1, arg p2) {
         return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
                  p2.cast<typename function_traits<decltype(*F)>::arg2_type>());
@@ -216,7 +226,7 @@ struct method_2 : abstract_method<T> {
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_3 : abstract_method<T> {
+struct method_3 final : abstract_method<T> {
     T call(arg p1, arg p2, arg p3) {
         return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
                  p2.cast<typename function_traits<decltype(*F)>::arg2_type>(),
@@ -226,7 +236,7 @@ struct method_3 : abstract_method<T> {
 
 /**********************************************************************************************/
 template<class T, auto F>
-struct method_4 : abstract_method<T> {
+struct method_4 final : abstract_method<T> {
     T call(arg p1, arg p2, arg p3, arg p4) {
         return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
                  p2.cast<typename function_traits<decltype(*F)>::arg2_type>(),
