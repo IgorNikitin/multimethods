@@ -24,14 +24,8 @@ Multimethods for C++17
 using namespace std;
 
 struct asteroid {};
-
-struct spaceship : multimethods::unknown {
-    virtual bool is_big() const { return false; }
-};
-
-struct spaceship_big : spaceship {
-    bool is_big() const override { return true; }
-};
+struct spaceship : multimethods::unknown {};
+struct spaceship_big : spaceship {};
 
 declare_method(collide, void)
 define_method(collide, asteroid&, spaceship_big&) { cout << "Big boom!.\n"; }
