@@ -12,17 +12,15 @@ struct spaceship_big : spaceship {
     bool is_big() const override { return true; }
 };
 
-
 declare_method(collide, void)
-define_method(collide, asteroid&, spaceship&)            { cout << "BOOM!" << endl; }
-define_method(collide, spaceship&, const spaceship& s)   { if(s.is_big()) skip_method; }
+define_method(collide, asteroid&, spaceship&) { cout << "Boom!" << endl; }
+define_method(collide, spaceship&, const spaceship& s) { if(s.is_big()) skip_method; }
 define_method(collide, spaceship&, const spaceship_big&) { cout << "Knock, knock." << endl; }
 
 declare_method(concat, string)
-define_method(concat)                       { return {}; }
-define_method(concat, int x, int y, int z)  { return to_string(x) + to_string(y) + to_string(z); }
+define_method(concat) { return ""s; }
+define_method(concat, int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
 define_method(concat, string s1, string s2) { return s1 + s2; }
-
 
 int main() {
    asteroid a;

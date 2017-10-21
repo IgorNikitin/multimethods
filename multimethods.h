@@ -27,7 +27,7 @@
 /**********************************************************************************************/
 #define define_method(name, ...) \
    static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
-   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_f_ ## name ::funcs_.push_back(::multimethods::detail::make_method<_mm_r_ ## name>(MM_JOIN(_mm_impl_, __LINE__))); return true; }(); \
+   static bool MM_JOIN(_mm_init_, __LINE__) = []{ _mm_f_ ## name ::funcs_.push_back(::multimethods::detail::make_method<_mm_r_ ## name, MM_JOIN(_mm_impl_, __LINE__)>()); return true; }(); \
    static _mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
 
 #define skip_method throw ::multimethods::not_match();
@@ -162,94 +162,80 @@ struct function_traits : public function_traits_impl<typename std::add_pointer<F
 
 
 /**********************************************************************************************/
-template<class T, class F>
+template<class T, auto F>
 struct method_0 : i_method<T> {
-    F f_;
-    method_0(F f) : f_(f) {}
-
-    T call() { return f_(); }
+    T call() { return F(); }
 };
 
 /**********************************************************************************************/
-template<class T, class F>
+template<class T, auto F>
 struct method_1 : i_method<T> {
-    F f_;
-    method_1(F f) : f_(f) {}
-
     T call(arg p) {
-        return f_(p.cast<typename function_traits<F>::arg1_type>());
+        return F(p.cast<typename function_traits<decltype(*F)>::arg1_type>());
     }
 };
 
 /**********************************************************************************************/
-template<class T, class F>
+template<class T, auto F>
 struct method_2 : i_method<T> {
-    F f_;
-    method_2(F f) : f_(f) {}
-
     T call(arg p1, arg p2) {
-        return f_(p1.cast<typename function_traits<F>::arg1_type>(),
-                  p2.cast<typename function_traits<F>::arg2_type>());
+        return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
+                 p2.cast<typename function_traits<decltype(*F)>::arg2_type>());
     }
 };
 
 /**********************************************************************************************/
-template<class T, class F>
+template<class T, auto F>
 struct method_3 : i_method<T> {
-    F f_;
-    method_3(F f) : f_(f) {}
-
     T call(arg p1, arg p2, arg p3) {
-        return f_(p1.cast<typename function_traits<F>::arg1_type>(),
-                  p2.cast<typename function_traits<F>::arg2_type>(),
-                  p3.cast<typename function_traits<F>::arg3_type>());
+        return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
+                 p2.cast<typename function_traits<decltype(*F)>::arg2_type>(),
+                 p3.cast<typename function_traits<decltype(*F)>::arg3_type>());
     }
 };
 
 /**********************************************************************************************/
-template<class T, class F>
+template<class T, auto F>
 struct method_4 : i_method<T> {
-    F f_;
-    method_4(F f) : f_(f) {}
-
     T call(arg p1, arg p2, arg p3, arg p4) {
-        return f_(p1.cast<typename function_traits<F>::arg1_type>(),
-                  p2.cast<typename function_traits<F>::arg2_type>(),
-                  p3.cast<typename function_traits<F>::arg3_type>(),
-                  p4.cast<typename function_traits<F>::arg4_type>());
+        return F(p1.cast<typename function_traits<decltype(*F)>::arg1_type>(),
+                 p2.cast<typename function_traits<decltype(*F)>::arg2_type>(),
+                 p3.cast<typename function_traits<decltype(*F)>::arg3_type>(),
+                 p4.cast<typename function_traits<decltype(*F)>::arg4_type>());
     }
 };
 
 
 /**********************************************************************************************/
-template<class T, class F> inline
-auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 0, i_method<T>*>::type {
-    return new method_0<T, F>(f);
+template<class T, auto F> inline
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 0, i_method<T>*>::type {
+    return new method_0<T, F>();
 }
 
 /**********************************************************************************************/
-template<class T, class F> inline
-auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 1, i_method<T>*>::type {
-    return new method_1<T, F>(f);
+template<class T, auto F> inline
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 1, i_method<T>*>::type {
+    return new method_1<T, F>();
 }
 
 /**********************************************************************************************/
-template<class T, class F> inline
-auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 2, i_method<T>*>::type {
-    return new method_2<T, F>(f);
+template<class T, auto F> inline
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 2, i_method<T>*>::type {
+    return new method_2<T, F>();
 }
 
 /**********************************************************************************************/
-template<class T, class F> inline
-auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 3, i_method<T>*>::type {
-    return new method_3<T, F>(f);
+template<class T, auto F> inline
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 3, i_method<T>*>::type {
+    return new method_3<T, F>();
 }
 
 /**********************************************************************************************/
-template<class T, class F> inline
-auto make_method(F&& f) -> typename std::enable_if<function_traits<F>::arity == 4, i_method<T>*>::type {
-    return new method_4<T, F>(f);
+template<class T, auto F> inline
+auto make_method() -> typename std::enable_if<function_traits<decltype(*F)>::arity == 4, i_method<T>*>::type {
+    return new method_4<T, F>();
 }
+
 
 /**********************************************************************************************/
 } }
