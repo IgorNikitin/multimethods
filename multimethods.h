@@ -279,8 +279,14 @@ template<class F1, class F2>
 struct compare_methods_impl;
 
 /**********************************************************************************************/
+template<class R1>
+struct compare_methods_impl<R1(*const)(), R1(*const)()> {
+    static constexpr int value = 0;
+};
+
+/**********************************************************************************************/
 template<class R1, class... Args1, class... Args2>
-struct compare_methods_impl<R1(*)(Args1...), R1(*)(Args2...)> {
+struct compare_methods_impl<R1(*const)(Args1...), R1(*const)(Args2...)> {
     static constexpr int value = sizeof...(Args1) < sizeof...(Args2)
         ? -1
         : sizeof...(Args1) > sizeof...(Args2)
@@ -290,7 +296,7 @@ struct compare_methods_impl<R1(*)(Args1...), R1(*)(Args2...)> {
 
 /**********************************************************************************************/
 template<class F1, class F2>
-struct compare_methods : public compare_methods_impl<typename std::add_pointer<F1>::type, typename std::add_pointer<F2>::type> {
+struct compare_methods : public compare_methods_impl<F1, F2> {
 };
 
 
@@ -640,27 +646,27 @@ struct sort_functions {
 
     template<class A>
     static constexpr bool pred(int b) {
-        if(b == 0) return compare_methods<A, decltype(*F0)>::value < 0;
-        if(b == 1) return compare_methods<A, decltype(*F1)>::value < 0;
-        if(b == 2) return compare_methods<A, decltype(*F2)>::value < 0;
-        if(b == 3) return compare_methods<A, decltype(*F3)>::value < 0;
-        if(b == 4) return compare_methods<A, decltype(*F4)>::value < 0;
-        if(b == 5) return compare_methods<A, decltype(*F5)>::value < 0;
-        if(b == 6) return compare_methods<A, decltype(*F6)>::value < 0;
-        if(b == 7) return compare_methods<A, decltype(*F7)>::value < 0;
-        if(b == 8) return compare_methods<A, decltype(*F8)>::value < 0;
-        if(b == 9) return compare_methods<A, decltype(*F9)>::value < 0;
-        if(b == 10) return compare_methods<A, decltype(*F10)>::value < 0;
-        if(b == 11) return compare_methods<A, decltype(*F11)>::value < 0;
-        if(b == 12) return compare_methods<A, decltype(*F12)>::value < 0;
-        if(b == 13) return compare_methods<A, decltype(*F13)>::value < 0;
-        if(b == 14) return compare_methods<A, decltype(*F14)>::value < 0;
-        if(b == 15) return compare_methods<A, decltype(*F15)>::value < 0;
-        if(b == 16) return compare_methods<A, decltype(*F16)>::value < 0;
-        if(b == 17) return compare_methods<A, decltype(*F17)>::value < 0;
-        if(b == 18) return compare_methods<A, decltype(*F18)>::value < 0;
-        if(b == 19) return compare_methods<A, decltype(*F19)>::value < 0;
-        if(b == 20) return compare_methods<A, decltype(*F20)>::value < 0;
+        if(b == 0) return compare_methods<A, decltype(F0)>::value < 0;
+        if(b == 1) return compare_methods<A, decltype(F1)>::value < 0;
+        if(b == 2) return compare_methods<A, decltype(F2)>::value < 0;
+        if(b == 3) return compare_methods<A, decltype(F3)>::value < 0;
+        if(b == 4) return compare_methods<A, decltype(F4)>::value < 0;
+        if(b == 5) return compare_methods<A, decltype(F5)>::value < 0;
+        if(b == 6) return compare_methods<A, decltype(F6)>::value < 0;
+        if(b == 7) return compare_methods<A, decltype(F7)>::value < 0;
+        if(b == 8) return compare_methods<A, decltype(F8)>::value < 0;
+        if(b == 9) return compare_methods<A, decltype(F9)>::value < 0;
+        if(b == 10) return compare_methods<A, decltype(F10)>::value < 0;
+        if(b == 11) return compare_methods<A, decltype(F11)>::value < 0;
+        if(b == 12) return compare_methods<A, decltype(F12)>::value < 0;
+        if(b == 13) return compare_methods<A, decltype(F13)>::value < 0;
+        if(b == 14) return compare_methods<A, decltype(F14)>::value < 0;
+        if(b == 15) return compare_methods<A, decltype(F15)>::value < 0;
+        if(b == 16) return compare_methods<A, decltype(F16)>::value < 0;
+        if(b == 17) return compare_methods<A, decltype(F17)>::value < 0;
+        if(b == 18) return compare_methods<A, decltype(F18)>::value < 0;
+        if(b == 19) return compare_methods<A, decltype(F19)>::value < 0;
+        if(b == 20) return compare_methods<A, decltype(F20)>::value < 0;
 
         return false;
     }
@@ -671,32 +677,32 @@ struct sort_functions {
             indexes[i] = i;
 
         std::sort(indexes, indexes + N, [](int a, int b) {
-            if(a == 0) return sort_functions::pred<decltype(*F0)>(b);
-            if(a == 1) return sort_functions::pred<decltype(*F1)>(b);
-            if(a == 2) return sort_functions::pred<decltype(*F2)>(b);
-            if(a == 3) return sort_functions::pred<decltype(*F3)>(b);
-            if(a == 4) return sort_functions::pred<decltype(*F4)>(b);
-            if(a == 5) return sort_functions::pred<decltype(*F5)>(b);
-            if(a == 6) return sort_functions::pred<decltype(*F6)>(b);
-            if(a == 7) return sort_functions::pred<decltype(*F7)>(b);
-            if(a == 8) return sort_functions::pred<decltype(*F8)>(b);
-            if(a == 9) return sort_functions::pred<decltype(*F9)>(b);
-            if(a == 10) return sort_functions::pred<decltype(*F10)>(b);
-            if(a == 11) return sort_functions::pred<decltype(*F11)>(b);
-            if(a == 12) return sort_functions::pred<decltype(*F12)>(b);
-            if(a == 13) return sort_functions::pred<decltype(*F13)>(b);
-            if(a == 14) return sort_functions::pred<decltype(*F14)>(b);
-            if(a == 15) return sort_functions::pred<decltype(*F15)>(b);
-            if(a == 16) return sort_functions::pred<decltype(*F16)>(b);
-            if(a == 17) return sort_functions::pred<decltype(*F17)>(b);
-            if(a == 18) return sort_functions::pred<decltype(*F18)>(b);
-            if(a == 19) return sort_functions::pred<decltype(*F19)>(b);
-            if(a == 20) return sort_functions::pred<decltype(*F20)>(b);
+            if(a == 0) return sort_functions::pred<decltype(F0)>(b);
+            if(a == 1) return sort_functions::pred<decltype(F1)>(b);
+            if(a == 2) return sort_functions::pred<decltype(F2)>(b);
+            if(a == 3) return sort_functions::pred<decltype(F3)>(b);
+            if(a == 4) return sort_functions::pred<decltype(F4)>(b);
+            if(a == 5) return sort_functions::pred<decltype(F5)>(b);
+            if(a == 6) return sort_functions::pred<decltype(F6)>(b);
+            if(a == 7) return sort_functions::pred<decltype(F7)>(b);
+            if(a == 8) return sort_functions::pred<decltype(F8)>(b);
+            if(a == 9) return sort_functions::pred<decltype(F9)>(b);
+            if(a == 10) return sort_functions::pred<decltype(F10)>(b);
+            if(a == 11) return sort_functions::pred<decltype(F11)>(b);
+            if(a == 12) return sort_functions::pred<decltype(F12)>(b);
+            if(a == 13) return sort_functions::pred<decltype(F13)>(b);
+            if(a == 14) return sort_functions::pred<decltype(F14)>(b);
+            if(a == 15) return sort_functions::pred<decltype(F15)>(b);
+            if(a == 16) return sort_functions::pred<decltype(F16)>(b);
+            if(a == 17) return sort_functions::pred<decltype(F17)>(b);
+            if(a == 18) return sort_functions::pred<decltype(F18)>(b);
+            if(a == 19) return sort_functions::pred<decltype(F19)>(b);
+            if(a == 20) return sort_functions::pred<decltype(F20)>(b);
 
             return a<b;
         } );
 
-        std::array<abstract_method<TR, BR>*, N> r;
+        std::vector<abstract_method<TR, BR>*> r(N);
         for( int i = 0 ; i < N ; ++i )
         {
             switch(indexes[i]) {
