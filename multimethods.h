@@ -7,6 +7,7 @@
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 /**********************************************************************************************/
 
+#include <algorithm>
 #include <optional>
 #include <string>
 #include <typeindex>
@@ -218,6 +219,78 @@ struct check_base_class_impl<B, R(*)(Args...)> {
 /**********************************************************************************************/
 template<class B, class F>
 struct check_base_class : public check_base_class_impl<B, typename std::add_pointer<F>::type> {
+};
+
+
+/**********************************************************************************************/
+constexpr int compare_types() { return 0; }
+template<class T1> constexpr int compare_types() { return 0; }
+template<class T1, class T2, class T3> constexpr int compare_types() { return 0; }
+template<class T1, class T2, class T3, class T4, class T5> constexpr int compare_types() { return 0; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7> constexpr int compare_types() { return 0; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9> constexpr int compare_types() { return 0; }
+
+/**********************************************************************************************/
+template<class T, class U>
+constexpr int compare_types() {
+    if(std::is_same<T, U>::value)
+        return 0;
+    if(std::is_base_of<T, U>::value)
+        return 1;
+    if(std::is_base_of<U, T>::value)
+        return -1;
+    return 0;
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class U1, class U2>
+constexpr int compare_types() {
+    if(constexpr int r = compare_types<T1, U1>() )
+        return r;
+    return compare_types<T2, U2>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class U1, class U2, class U3>
+constexpr int compare_types() {
+    if(constexpr int r = compare_types<T1, U1>() )
+        return r;
+    return compare_types<T2, T3, U2, U3>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class U1, class U2, class U3, class U4>
+constexpr int compare_types() {
+    if(constexpr int r = compare_types<T1, U1>() )
+        return r;
+    return compare_types<T2, T3, T4, U2, U3, U4>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class T5, class U1, class U2, class U3, class U4, class U5>
+constexpr int compare_types() {
+    if(constexpr int r = compare_types<T1, U1>() )
+        return r;
+    return compare_types<T2, T3, T4, T5, U2, U3, U4, U5>();
+}
+
+/**********************************************************************************************/
+template<class F1, class F2>
+struct compare_methods_impl;
+
+/**********************************************************************************************/
+template<class R1, class... Args1, class... Args2>
+struct compare_methods_impl<R1(*)(Args1...), R1(*)(Args2...)> {
+    static constexpr int value = sizeof...(Args1) < sizeof...(Args2)
+        ? -1
+        : sizeof...(Args1) > sizeof...(Args2)
+          ? 1
+          : compare_types<Args1..., Args2...>();
+};
+
+/**********************************************************************************************/
+template<class F1, class F2>
+struct compare_methods : public compare_methods_impl<typename std::add_pointer<F1>::type, typename std::add_pointer<F2>::type> {
 };
 
 
@@ -516,6 +589,147 @@ struct multimethod_parameters {
     using type=T;
     using base=U;
 };
+
+
+template<std::size_t N, auto T, auto... types>
+struct get_Nth_type
+{
+    static constexpr auto value = get_Nth_type<N - 1, types...>::value;
+};
+
+template<auto T, auto... types>
+struct get_Nth_type<0, T, types...>
+{
+    static constexpr auto value = T;
+};
+
+/**********************************************************************************************/
+template<class TR, class BR, auto... Funcs>
+struct sort_functions {
+    static constexpr int N = sizeof...(Funcs);
+
+    template<std::size_t N, auto... Args>
+    static constexpr auto getF = get_Nth_type<N, Args...>::value;
+
+#define MM_FUNC_TYPE(I) \
+    static constexpr auto F ## I = getF<(I<N?I:0), Funcs...>
+
+    MM_FUNC_TYPE(0);
+    MM_FUNC_TYPE(1);
+    MM_FUNC_TYPE(2);
+    MM_FUNC_TYPE(3);
+    MM_FUNC_TYPE(4);
+    MM_FUNC_TYPE(5);
+    MM_FUNC_TYPE(6);
+    MM_FUNC_TYPE(7);
+    MM_FUNC_TYPE(8);
+    MM_FUNC_TYPE(9);
+    MM_FUNC_TYPE(10);
+    MM_FUNC_TYPE(11);
+    MM_FUNC_TYPE(12);
+    MM_FUNC_TYPE(13);
+    MM_FUNC_TYPE(14);
+    MM_FUNC_TYPE(15);
+    MM_FUNC_TYPE(16);
+    MM_FUNC_TYPE(17);
+    MM_FUNC_TYPE(18);
+    MM_FUNC_TYPE(19);
+    MM_FUNC_TYPE(20);
+
+#undef MM_FUNC_TYPE
+
+    template<class A>
+    static constexpr bool pred(int b) {
+        if(b == 0) return compare_methods<A, decltype(*F0)>::value < 0;
+        if(b == 1) return compare_methods<A, decltype(*F1)>::value < 0;
+        if(b == 2) return compare_methods<A, decltype(*F2)>::value < 0;
+        if(b == 3) return compare_methods<A, decltype(*F3)>::value < 0;
+        if(b == 4) return compare_methods<A, decltype(*F4)>::value < 0;
+        if(b == 5) return compare_methods<A, decltype(*F5)>::value < 0;
+        if(b == 6) return compare_methods<A, decltype(*F6)>::value < 0;
+        if(b == 7) return compare_methods<A, decltype(*F7)>::value < 0;
+        if(b == 8) return compare_methods<A, decltype(*F8)>::value < 0;
+        if(b == 9) return compare_methods<A, decltype(*F9)>::value < 0;
+        if(b == 10) return compare_methods<A, decltype(*F10)>::value < 0;
+        if(b == 11) return compare_methods<A, decltype(*F11)>::value < 0;
+        if(b == 12) return compare_methods<A, decltype(*F12)>::value < 0;
+        if(b == 13) return compare_methods<A, decltype(*F13)>::value < 0;
+        if(b == 14) return compare_methods<A, decltype(*F14)>::value < 0;
+        if(b == 15) return compare_methods<A, decltype(*F15)>::value < 0;
+        if(b == 16) return compare_methods<A, decltype(*F16)>::value < 0;
+        if(b == 17) return compare_methods<A, decltype(*F17)>::value < 0;
+        if(b == 18) return compare_methods<A, decltype(*F18)>::value < 0;
+        if(b == 19) return compare_methods<A, decltype(*F19)>::value < 0;
+        if(b == 20) return compare_methods<A, decltype(*F20)>::value < 0;
+
+        return false;
+    }
+
+    static constexpr auto result() {
+        int indexes[N];
+        for( int i = 0 ; i < N ; ++i )
+            indexes[i] = i;
+
+        std::sort(indexes, indexes + N, [](int a, int b) {
+            if(a == 0) return sort_functions::pred<decltype(*F0)>(b);
+            if(a == 1) return sort_functions::pred<decltype(*F1)>(b);
+            if(a == 2) return sort_functions::pred<decltype(*F2)>(b);
+            if(a == 3) return sort_functions::pred<decltype(*F3)>(b);
+            if(a == 4) return sort_functions::pred<decltype(*F4)>(b);
+            if(a == 5) return sort_functions::pred<decltype(*F5)>(b);
+            if(a == 6) return sort_functions::pred<decltype(*F6)>(b);
+            if(a == 7) return sort_functions::pred<decltype(*F7)>(b);
+            if(a == 8) return sort_functions::pred<decltype(*F8)>(b);
+            if(a == 9) return sort_functions::pred<decltype(*F9)>(b);
+            if(a == 10) return sort_functions::pred<decltype(*F10)>(b);
+            if(a == 11) return sort_functions::pred<decltype(*F11)>(b);
+            if(a == 12) return sort_functions::pred<decltype(*F12)>(b);
+            if(a == 13) return sort_functions::pred<decltype(*F13)>(b);
+            if(a == 14) return sort_functions::pred<decltype(*F14)>(b);
+            if(a == 15) return sort_functions::pred<decltype(*F15)>(b);
+            if(a == 16) return sort_functions::pred<decltype(*F16)>(b);
+            if(a == 17) return sort_functions::pred<decltype(*F17)>(b);
+            if(a == 18) return sort_functions::pred<decltype(*F18)>(b);
+            if(a == 19) return sort_functions::pred<decltype(*F19)>(b);
+            if(a == 20) return sort_functions::pred<decltype(*F20)>(b);
+
+            return a<b;
+        } );
+
+        std::array<abstract_method<TR, BR>*, N> r;
+        for( int i = 0 ; i < N ; ++i )
+        {
+            switch(indexes[i]) {
+                case 0: r[i] = make_method<TR, BR, F0>(); break;
+                case 1: r[i] = make_method<TR, BR, F1>(); break;
+                case 2: r[i] = make_method<TR, BR, F2>(); break;
+                case 3: r[i] = make_method<TR, BR, F3>(); break;
+                case 4: r[i] = make_method<TR, BR, F4>(); break;
+                case 5: r[i] = make_method<TR, BR, F5>(); break;
+                case 6: r[i] = make_method<TR, BR, F6>(); break;
+                case 7: r[i] = make_method<TR, BR, F7>(); break;
+                case 8: r[i] = make_method<TR, BR, F8>(); break;
+                case 9: r[i] = make_method<TR, BR, F9>(); break;
+                case 10: r[i] = make_method<TR, BR, F10>(); break;
+                case 11: r[i] = make_method<TR, BR, F11>(); break;
+                case 12: r[i] = make_method<TR, BR, F12>(); break;
+                case 13: r[i] = make_method<TR, BR, F13>(); break;
+                case 14: r[i] = make_method<TR, BR, F14>(); break;
+                case 15: r[i] = make_method<TR, BR, F15>(); break;
+                case 16: r[i] = make_method<TR, BR, F16>(); break;
+                case 17: r[i] = make_method<TR, BR, F17>(); break;
+                case 18: r[i] = make_method<TR, BR, F18>(); break;
+                case 19: r[i] = make_method<TR, BR, F19>(); break;
+                case 20: r[i] = make_method<TR, BR, F20>(); break;
+
+                default:;
+            }
+        }
+
+        return r;
+    }
+};
+
 
 /**********************************************************************************************/
 } }

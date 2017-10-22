@@ -9,12 +9,12 @@ struct base2 { virtual ~base2(){} };
 struct derived2 : base2 {};
 
 declare_method(print1)
-define_method(print1, derived1&) { cout << "derived1\n"; }
 define_method(print1, base1&) { cout << "base1\n"; }
+define_method(print1, derived1&) { cout << "derived1\n"; }
 
 declare_method(print2, void, base2)
-define_method(print2, derived2&) { cout << "derived2\n"; }
 define_method(print2, base2&) { cout << "base2\n"; }
+define_method(print2, derived2&) { cout << "derived2\n"; }
 
 int main() {
     base1 b1;
