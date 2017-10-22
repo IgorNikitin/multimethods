@@ -12,6 +12,7 @@ declare_method(collide, string, thing);
 define_method(collide, ship&, thing&) { return "kaboom!"; }
 define_method(collide, thing& a, ship& b) { return collide(b, a); }
 define_method(collide, asteroid&, asteroid&) { return "traverse"; }
+define_method_fallback(collide) { return {}; }
 
 int main() {
   ship player;
