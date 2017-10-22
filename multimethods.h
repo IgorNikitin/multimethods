@@ -14,10 +14,12 @@
 
 
 /**********************************************************************************************/
-// Declares a new multimethod and specifies it's result type (void by default).
+// Declares a new multimethod and optionally specifies it's result type and base class
+// for polymorphic types.
 //
 //   declare_method(collide)
 //   declare_method(concat, string)
+//   declare_method(concat, string, I_Unknown)
 //
 #define declare_method(name, ...) \
     using g_mm_b_ ## name = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::base; \
