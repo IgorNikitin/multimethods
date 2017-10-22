@@ -47,6 +47,8 @@
 //
 #define define_method(name, ...) \
    static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
+   static_assert(::multimethods::detail::check_base_class<g_mm_b_ ## name, decltype(*MM_JOIN(_mm_impl_, __LINE__))>::value, \
+   "For polymorphic types in a parameters list need to specify common base class on call 'declare_method' function, or use 'multimethods::unknown' as base class."); \
    static bool MM_JOIN(_mm_init_, __LINE__) = []{ g_mm_f_ ## name ::funcs_.push_back(::multimethods::detail::make_method<g_mm_r_ ## name, g_mm_b_ ## name, MM_JOIN(_mm_impl_, __LINE__)>()); return true; }(); \
    static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
 
@@ -186,7 +188,37 @@ struct abstract_method {
 
 
 /**********************************************************************************************/
-template<typename F>
+template<class B>
+constexpr bool is_match_to_base() {
+    return true;
+}
+
+/**********************************************************************************************/
+template<class B, class T, class... Args>
+constexpr bool is_match_to_base() {
+    if(std::is_polymorphic<typename std::decay<T>::type>::value && !std::is_base_of<B, typename std::decay<T>::type>::value)
+        return false;
+    return is_match_to_base<B, Args...>();
+}
+
+/**********************************************************************************************/
+template<class B, class F>
+struct check_base_class_impl;
+
+/**********************************************************************************************/
+template<class B, class R, class... Args>
+struct check_base_class_impl<B, R(*)(Args...)> {
+    static constexpr bool value = is_match_to_base<B, Args...>();
+};
+
+/**********************************************************************************************/
+template<class B, class F>
+struct check_base_class : public check_base_class_impl<B, typename std::add_pointer<F>::type> {
+};
+
+
+/**********************************************************************************************/
+template<class F>
 struct function_traits_impl;
 
 /**********************************************************************************************/
@@ -246,7 +278,7 @@ struct function_traits_impl<R(*)(T1, T2, T3, T4, T5)> {
 };
 
 /**********************************************************************************************/
-template<typename F>
+template<class F>
 struct function_traits : public function_traits_impl<typename std::add_pointer<F>::type> {
 };
 
