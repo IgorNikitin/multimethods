@@ -2,17 +2,19 @@
 #include <multimethods.h>
 using namespace std;
 
-struct base1 {};
+struct base1 : multimethods::unknown {};
 struct derived1 : base1 {};
 
-struct base2 : multimethods::unknown {};
+struct base2 { virtual ~base2(){} };
 struct derived2 : base2 {};
 
-declare_method(print)
-define_method(print, derived1&) { cout << "derived1\n"; }
-define_method(print, derived2&) { cout << "derived2\n"; }
-define_method(print, base1&) { cout << "base1\n"; }
-define_method(print, base2&) { cout << "base2\n"; }
+declare_method(print1)
+define_method(print1, derived1&) { cout << "derived1\n"; }
+define_method(print1, base1&) { cout << "base1\n"; }
+
+declare_method(print2, void, base2)
+define_method(print2, derived2&) { cout << "derived2\n"; }
+define_method(print2, base2&) { cout << "base2\n"; }
 
 int main() {
     base1 b1;
@@ -20,11 +22,12 @@ int main() {
     derived1 d1;
     derived2 d2;
 
-    print(b1); // base1
-    print(b2); // base2
-    print(d1); // derived1
-    print(d2); // derived2
+    print1(b1); // base1
+    print1(d1); // derived1
 
-    print(static_cast<base1&>(d1)); // base1
-    print(static_cast<base2&>(d2)); // derived2
+    print2(b2); // base2
+    print2(d2); // derived2
+
+    print1(static_cast<base1&>(d1)); // derived1
+    print2(static_cast<base2&>(d2)); // derived2
 }
