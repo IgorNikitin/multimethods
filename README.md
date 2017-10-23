@@ -58,11 +58,12 @@ base const
     struct asteroid : base {};
     struct spaceship : base {};
 
-    declare_method(collide)
-    define_method(collide, asteroid&, asteroid&) {}
-    define_method(collide, asteroid&, spaceship&) {}
-    define_method(collide, spaceship&, asteroid&) {}
-    define_method(collide, spaceship&, spaceship&) {}
+    define_method(collide)
+        match(asteroid&, asteroid&) {}
+        match(asteroid&, spaceship&) {}
+        match(spaceship&, asteroid&) {}
+        match(spaceship&, spaceship&) {}
+    end_method
     ...
     spaceship s1, s2;
     for(int i = 0; i < 1000000; ++i)
