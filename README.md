@@ -4,10 +4,9 @@ Multimethods for C++17
 ## Особливості
 
 * Підтримка неполіморфних типів;
-* довільна кількість параметрів у реалізаціях;
 * бібліотека сортує реалізації, використувачи спадкування та константність, спочатку обираються успадковані класи, якщо ж типи співпадають для всіх параметрів, то реалізація без const (типи перевіряються зліва-направо як для спадкування, так і для наявності const в них) має вищій пріоритет, наприклад:
 ```C++
-    void multi_method(collide)
+    void multi_method(collide, const thing&, const thing&)
         match(const thing&, spaceship&) { cout << "base const\n"; }
         match(thing&, spaceship&) { cout << "base\n"; }
         match(const asteroid&, spaceship&) { cout << "derived const\n"; next_method; }
@@ -31,7 +30,7 @@ Multimethods for C++17
 ```
 * можливість обирати методи, використовуючи передані аргументи, наприклад:
 ```C++
-    int multi_method(my_abs)
+    int multi_method(my_abs, int)
         match(int n) { if(n > 0) next_method; return -n; }
         match(int n) { if(n < 0) next_method; return n; }
     end_method
@@ -39,7 +38,7 @@ Multimethods for C++17
 * мінімум кода для використання;
 * можна вказати fallback-функцію, що буде викликатися, якщо не знайдена відповідна реалізація;
 ```C++
-    void multi_method(dump)
+    void multi_method(dump, any)
         match(int n) { cout << n << endl; }
         match(string s) { cout << s << endl; }
         fallback { cout << "unknown\n"; }
@@ -49,16 +48,14 @@ Multimethods for C++17
 
 ## Важлива інформація (обмеження)
 
-* Якщо треба диспетчеризація за базовим класом, то або вкажіть його другим аргументом у multi_method, або наслідуйте його (їх) від multimethods::unknown, див. [example3.cpp](examples/example3.cpp);
-* для максимальної швидкодії краще обрати інший інструмент, ця бібліотека використовує dynamic_cast для пошуку відповідної реалізації, хоча у більшості випадків її швидкодії буде цілком достатньо;
-* про неможливість виклику функції з неправильними аргументами можна буде дізнатися тільки у рантаймі (виключення multimethods::not_implemented);
+* Для максимальної швидкодії краще обрати інший інструмент, ця бібліотека використовує dynamic_cast для пошуку відповідної реалізації, хоча у більшості випадків її швидкодії буде цілком достатньо;
 * чим більше реалізацій у одного з методів, тим більше часу може знадобиться для його виклику. Наприклад, для такого коду:
 ```C++
-    using thing = multimethods::unknown;
+    struct thing { virtial ~thing() {} };
     struct asteroid : thing {};
     struct spaceship : thing {};
 
-    void multi_method(collide)
+    void multi_method(collide, thing&, thing&)
         match(asteroid&, asteroid&) {}
         match(asteroid&, spaceship&) {}
         match(spaceship&, asteroid&) {}
@@ -78,34 +75,32 @@ Multimethods for C++17
 #include <multimethods.h>
 using namespace std;
 
-struct vehicle : multimethods::unknown {};
+struct vehicle { virtual ~vehicle(){} };
 struct car : vehicle {};
-struct inspector : multimethods::unknown {};
+struct inspector { virtual ~inspector(){} };
 struct state_inspector : inspector {};
 
-void multi_method(inspect)
-    match(vehicle&, inspector&) { cout << "Inspect vehicle.\n"; }
-    match(car&, inspector&) { cout << "Inspect seat belts.\n"; next_method; }
-    match(car&, state_inspector&) { cout << "Check insurance.\n"; next_method; }
+void multi_method(inspect, const vehicle&, const inspector&)
+    match(const car&, const inspector&) { cout << "Inspect seat belts.\n"; next_method; }
+    match(const car&, const state_inspector&) { cout << "Check insurance.\n"; next_method; }
+    match(const vehicle&, const inspector&) { cout << "Inspect vehicle.\n"; }
 end_method
 
-string multi_method(join)
-    match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
+string multi_method(join, any, any)
+    match(int x, int y) { return to_string(x) + to_string(y); }
     match(string s1, string s2) { return s1 + s2; }
-    fallback { return "fallback"; }
 end_method
 
 int main() {
     inspect(car(), state_inspector());  // Check insurance. Inspect seat belts. Inspect vehicle.
 
-    try {
-        inspect(car(), true);
-    } catch(multimethods::not_implemented& e) {
-        cout << e.what() << endl; // inspect: not_implemented
-    }
-
-    cout << join(1, 2, 3) << endl; // 123
+    cout << join(1, 2) << endl; // 123
     cout << join("Hello,"s, " world."s) << endl; // Hello, world.
-    cout << join(false) << endl; // fallback
+
+    try {
+        join(true, false);
+    } catch(multimethods::not_implemented& e) {
+        cout << e.what() << endl; // join: not_implemented
+    }
 }
 ```
