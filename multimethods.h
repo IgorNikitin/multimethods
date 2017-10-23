@@ -740,32 +740,37 @@ struct sort_functions {
     MM_FUNC_TYPE(18);
     MM_FUNC_TYPE(19);
     MM_FUNC_TYPE(20);
+    MM_FUNC_TYPE(21);
+    MM_FUNC_TYPE(22);
+    MM_FUNC_TYPE(23);
+    MM_FUNC_TYPE(24);
+    MM_FUNC_TYPE(25);
+    MM_FUNC_TYPE(26);
+    MM_FUNC_TYPE(27);
+    MM_FUNC_TYPE(28);
+    MM_FUNC_TYPE(29);
+    MM_FUNC_TYPE(30);
+    MM_FUNC_TYPE(31);
+    MM_FUNC_TYPE(32);
 
 #undef MM_FUNC_TYPE
 
     template<class A>
     static constexpr bool pred(int b) {
-        if(b == 0) return compare_methods<A, F0>::value < 0;
-        if(b == 1) return compare_methods<A, F1>::value < 0;
-        if(b == 2) return compare_methods<A, F2>::value < 0;
-        if(b == 3) return compare_methods<A, F3>::value < 0;
-        if(b == 4) return compare_methods<A, F4>::value < 0;
-        if(b == 5) return compare_methods<A, F5>::value < 0;
-        if(b == 6) return compare_methods<A, F6>::value < 0;
-        if(b == 7) return compare_methods<A, F7>::value < 0;
-        if(b == 8) return compare_methods<A, F8>::value < 0;
-        if(b == 9) return compare_methods<A, F9>::value < 0;
-        if(b == 10) return compare_methods<A, F10>::value < 0;
-        if(b == 11) return compare_methods<A, F11>::value < 0;
-        if(b == 12) return compare_methods<A, F12>::value < 0;
-        if(b == 13) return compare_methods<A, F13>::value < 0;
-        if(b == 14) return compare_methods<A, F14>::value < 0;
-        if(b == 15) return compare_methods<A, F15>::value < 0;
-        if(b == 16) return compare_methods<A, F16>::value < 0;
-        if(b == 17) return compare_methods<A, F17>::value < 0;
-        if(b == 18) return compare_methods<A, F18>::value < 0;
-        if(b == 19) return compare_methods<A, F19>::value < 0;
-        if(b == 20) return compare_methods<A, F20>::value < 0;
+        #define MM_CASE_B(I) \
+            if(b == I) return compare_methods<A, F ## I>::value < 0;
+
+        MM_CASE_B(0); MM_CASE_B(1); MM_CASE_B(2); MM_CASE_B(3);
+        MM_CASE_B(4); MM_CASE_B(5); MM_CASE_B(6); MM_CASE_B(7);
+        MM_CASE_B(8); MM_CASE_B(9); MM_CASE_B(10); MM_CASE_B(11);
+        MM_CASE_B(12); MM_CASE_B(13); MM_CASE_B(14); MM_CASE_B(15);
+        MM_CASE_B(16); MM_CASE_B(17); MM_CASE_B(18); MM_CASE_B(19);
+        MM_CASE_B(20); MM_CASE_B(21); MM_CASE_B(22); MM_CASE_B(23);
+        MM_CASE_B(24); MM_CASE_B(25); MM_CASE_B(26); MM_CASE_B(27);
+        MM_CASE_B(28); MM_CASE_B(29); MM_CASE_B(30); MM_CASE_B(31);
+        MM_CASE_B(32);
+
+        #undef MM_CASE_B
 
         return false;
     }
@@ -777,27 +782,20 @@ struct sort_functions {
             indexes[i] = i;
 
         std::sort(indexes, indexes + N, [](int a, int b) {
-            if(a == 0) return sort_functions::pred<F0>(b);
-            if(a == 1) return sort_functions::pred<F1>(b);
-            if(a == 2) return sort_functions::pred<F2>(b);
-            if(a == 3) return sort_functions::pred<F3>(b);
-            if(a == 4) return sort_functions::pred<F4>(b);
-            if(a == 5) return sort_functions::pred<F5>(b);
-            if(a == 6) return sort_functions::pred<F6>(b);
-            if(a == 7) return sort_functions::pred<F7>(b);
-            if(a == 8) return sort_functions::pred<F8>(b);
-            if(a == 9) return sort_functions::pred<F9>(b);
-            if(a == 10) return sort_functions::pred<F10>(b);
-            if(a == 11) return sort_functions::pred<F11>(b);
-            if(a == 12) return sort_functions::pred<F12>(b);
-            if(a == 13) return sort_functions::pred<F13>(b);
-            if(a == 14) return sort_functions::pred<F14>(b);
-            if(a == 15) return sort_functions::pred<F15>(b);
-            if(a == 16) return sort_functions::pred<F16>(b);
-            if(a == 17) return sort_functions::pred<F17>(b);
-            if(a == 18) return sort_functions::pred<F18>(b);
-            if(a == 19) return sort_functions::pred<F19>(b);
-            if(a == 20) return sort_functions::pred<F20>(b);
+            #define MM_CASE_A(I) \
+                if(a == I) return sort_functions::pred<F ## I>(b)
+
+            MM_CASE_A(0); MM_CASE_A(1); MM_CASE_A(2); MM_CASE_A(3);
+            MM_CASE_A(4); MM_CASE_A(5); MM_CASE_A(6); MM_CASE_A(7);
+            MM_CASE_A(8); MM_CASE_A(9); MM_CASE_A(10); MM_CASE_A(11);
+            MM_CASE_A(12); MM_CASE_A(13); MM_CASE_A(14); MM_CASE_A(15);
+            MM_CASE_A(16); MM_CASE_A(17); MM_CASE_A(18); MM_CASE_A(19);
+            MM_CASE_A(20); MM_CASE_A(21); MM_CASE_A(22); MM_CASE_A(23);
+            MM_CASE_A(24); MM_CASE_A(25); MM_CASE_A(26); MM_CASE_A(27);
+            MM_CASE_A(28); MM_CASE_A(29); MM_CASE_A(30); MM_CASE_A(31);
+            MM_CASE_A(32);
+
+            #undef MM_CASE_A
 
             return a<b;
         } );
@@ -805,31 +803,22 @@ struct sort_functions {
         std::vector<abstract_method<TR, BR>*> r(N);
         for( int i = 0 ; i < N ; ++i )
         {
-            #define MM_MAKE_METHOD(I) \
-                case I: r[i] = make_method<TR, BR, F ## I>(std::get<I<N?I+1:1>(funcs_)); break;
-
             switch(indexes[i]) {
-                MM_MAKE_METHOD(0);
-                MM_MAKE_METHOD(1);
-                MM_MAKE_METHOD(2);
-                MM_MAKE_METHOD(3);
-                MM_MAKE_METHOD(4);
-                MM_MAKE_METHOD(5);
-                MM_MAKE_METHOD(6);
-                MM_MAKE_METHOD(7);
-                MM_MAKE_METHOD(8);
-                MM_MAKE_METHOD(9);
-                MM_MAKE_METHOD(10);
-                MM_MAKE_METHOD(11);
-                MM_MAKE_METHOD(12);
-                MM_MAKE_METHOD(13);
-                MM_MAKE_METHOD(14);
-                MM_MAKE_METHOD(15);
-                MM_MAKE_METHOD(16);
-                MM_MAKE_METHOD(17);
-                MM_MAKE_METHOD(18);
-                MM_MAKE_METHOD(19);
-                MM_MAKE_METHOD(20);
+
+                #define MM_MAKE_METHOD(I) \
+                    case I: r[i] = make_method<TR, BR, F ## I>(std::get<I<N?I+1:1>(funcs_)); break
+
+                MM_MAKE_METHOD(0); MM_MAKE_METHOD(1); MM_MAKE_METHOD(2); MM_MAKE_METHOD(3);
+                MM_MAKE_METHOD(4); MM_MAKE_METHOD(5); MM_MAKE_METHOD(6); MM_MAKE_METHOD(7);
+                MM_MAKE_METHOD(8); MM_MAKE_METHOD(9); MM_MAKE_METHOD(10); MM_MAKE_METHOD(11);
+                MM_MAKE_METHOD(12); MM_MAKE_METHOD(13); MM_MAKE_METHOD(14); MM_MAKE_METHOD(15);
+                MM_MAKE_METHOD(16); MM_MAKE_METHOD(17); MM_MAKE_METHOD(18); MM_MAKE_METHOD(19);
+                MM_MAKE_METHOD(20); MM_MAKE_METHOD(21); MM_MAKE_METHOD(22); MM_MAKE_METHOD(23);
+                MM_MAKE_METHOD(24); MM_MAKE_METHOD(25); MM_MAKE_METHOD(26); MM_MAKE_METHOD(27);
+                MM_MAKE_METHOD(28); MM_MAKE_METHOD(29); MM_MAKE_METHOD(30); MM_MAKE_METHOD(31);
+                MM_MAKE_METHOD(32);
+
+                #undef MM_MAKE_METHOD
 
                 default:;
             }
