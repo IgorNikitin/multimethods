@@ -7,13 +7,13 @@ struct car : vehicle {};
 struct inspector : multimethods::unknown {};
 struct state_inspector : inspector {};
 
-define_method(inspect)
+void multi_method(inspect)
     match(vehicle&, inspector&) { cout << "Inspect vehicle.\n"; }
     match(car&, inspector&) { cout << "Inspect seat belts.\n"; next_method; }
     match(car&, state_inspector&) { cout << "Check insurance.\n"; next_method; }
 end_method
 
-define_method(join, string)
+string multi_method(join)
     match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
     match(string s1, string s2) { return s1 + s2; }
     fallback { return "fallback"; }

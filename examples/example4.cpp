@@ -15,7 +15,7 @@ struct reason : unknown {};
 struct business : reason {};
 struct comfort : reason {};
 
-define_method(approve, bool)
+bool multi_method(approve)
     match(expense&, ceo&, reason&) { return true; }
     match(cab&, manager&, business&) { return true; }
     fallback { return false; }

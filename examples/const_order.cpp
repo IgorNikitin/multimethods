@@ -5,7 +5,7 @@ using namespace std;
 struct asteroid {};
 struct spaceship {};
 
-define_method(collide)
+void multi_method(collide)
     match(asteroid&, const spaceship&) { cout << "Just check.\n"; }
     match(asteroid&, spaceship&) { cout << "Game over.\n"; }
 end_method

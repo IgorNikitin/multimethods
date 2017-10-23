@@ -7,7 +7,7 @@ struct asteroid : thing {};
 struct bullet : thing {};
 struct spaceship : thing {};
 
-define_method(collide)
+void multi_method(collide)
     match(asteroid&, asteroid&) { cout << "Traverse\n"; }
     match(asteroid&, bullet&) { cout << "Hit\n"; }
     match(asteroid&, spaceship&) { cout << "Boom\n"; }

@@ -8,12 +8,12 @@ struct derived1 : base1 {};
 struct base2 { virtual ~base2(){} };
 struct derived2 : base2 {};
 
-define_method(print1)
+void multi_method(print1)
     match(base1&) { cout << "base1\n"; }
     match(derived1&) { cout << "derived1\n"; }
 end_method
 
-define_method(print2, void, base2)
+void multi_method(print2, base2)
     match(base2&) { cout << "base2\n"; }
     match(derived2&) { cout << "derived2\n"; }
 end_method

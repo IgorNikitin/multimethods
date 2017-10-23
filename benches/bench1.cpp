@@ -6,7 +6,7 @@ using namespace std;
 struct asteroid {};
 struct spaceship {};
 
-define_method(collide)
+void multi_method(collide)
     match(asteroid&, asteroid&) {}
     match(asteroid&, spaceship&) {}
     match(spaceship&, asteroid&) {}

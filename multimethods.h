@@ -24,12 +24,13 @@
 //       match(asteroid&, spaceship&) {}
 //   end_method
 //
-#define define_method(name, ...) \
+#define multi_method(name, ...) \
+    mm_proto_ret_ ## name(){}; \
     namespace mm_namespace_ ## name { \
         using namespace ::multimethods::detail; \
         \
         using base_t     = multimethod_parameters<__VA_ARGS__>::base; \
-        using ret_type_t = multimethod_parameters<__VA_ARGS__>::type; \
+        using ret_type_t = std::result_of_t<decltype(&mm_proto_ret_ ## name)()>; \
         using method_t   = abstract_method<ret_type_t, base_t>; \
         \
         static inline method_t* g_fallback { nullptr }; \
@@ -701,9 +702,8 @@ struct method_result : public method_result_impl<T> {
 
 
 /**********************************************************************************************/
-template<class T=void, class U=::multimethods::unknown>
+template<class U=::multimethods::unknown>
 struct multimethod_parameters {
-    using type = T;
     using base = U;
 };
 

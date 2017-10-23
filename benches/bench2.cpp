@@ -7,7 +7,7 @@ struct base : public multimethods::unknown {};
 struct asteroid : base {};
 struct spaceship : base {};
 
-define_method(collide)
+void multi_method(collide)
     match(asteroid&, asteroid&) {}
     match(asteroid&, spaceship&) {}
     match(spaceship&, asteroid&) {}
