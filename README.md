@@ -17,9 +17,9 @@ Multimethods for C++17
     ...
     asteroid a;
     spaceship s;
-    collide(static_cast<thing&>(a), s);
+    collide((thing&) a, s);
     cout << "-------------\n";
-    collide(static_cast<const thing&>(a), s);
+    collide((const thing&) a, s);
 ``` 
 виведе на екран:
 ```
