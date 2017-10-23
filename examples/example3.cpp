@@ -39,8 +39,7 @@ struct derived2 : base2 {};
             : throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
-    static bool MM_JOIN(_mm_init_, __LINE__) = []{ g_mm_f_ ## name::funcs_ = \
-        ::multimethods::detail::sort_functions<g_mm_r_ ## name, g_mm_b_ ## name
+    static bool MM_JOIN(_mm_init_, __LINE__) = []{ const std::tuple funcs { true
 
 
 /**********************************************************************************************/
@@ -49,20 +48,22 @@ struct derived2 : base2 {};
 //   declare_method(collide)
 //   define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
 //
-#define match( ...) ,+[]
+#define match ,+[]
 
-#define end_method \
-    >::result(); return true; }();
+#define end_method(name) \
+    }; \
+    g_mm_f_ ## name::funcs_ = ::multimethods::detail::sort_functions(funcs).sort<g_mm_r_ ## name, g_mm_b_ ## name>(); \
+    return true; }();
 
 define_method1(print1)
     match(base1&) { cout << "base1\n"; }
     match(derived1&) { cout << "derived1\n"; }
-end_method
+end_method(print1)
 
 define_method1(print2, void, base2)
     match(base2&) { cout << "base2\n"; }
     match(derived2&) { cout << "derived2\n"; }
-end_method
+end_method(print1)
 
 int main() {
     base1 b1;
@@ -70,7 +71,7 @@ int main() {
     derived1 d1;
     derived2 d2;
 
-    print1(b1); // base1
+    print1(); // base1
     print1(d1); // derived1
 
     print2(b2); // base2
