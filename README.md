@@ -3,24 +3,54 @@ Multimethods for C++17
 
 ## Особливості
 
-* Можливість розділення оголошення методу та його реализацій, вони можуть бути у окремих .cpp-файлах;
-* підтримка неполіморфних типів;
+* Підтримка неполіморфних типів;
 * довільна кількість параметрів у реалізаціях;
 * можливість отримати результат від функції;
+* бібліотека сортує реалізації, використувачи спадкування та константність, спочатку обираються успадковані класи, якщо ж вони співпадають для всіх параметрів, то реалізація без const (типи порівнюються зліва-направо як для спадкування, так і для const) має вищій пріоритет, наприклад:
+```C++
+        define_method(collide, void, thing)
+        match(const thing&, spaceship&) { cout << "base const\n"; }
+        match(thing&, spaceship&) { cout << "base\n"; }
+        match(const asteroid&, spaceship&) { cout << "derived const\n"; next_method; }
+        match(asteroid&, spaceship&) { cout << "derived\n"; next_method; }
+    end_method
+    ...
+    asteroid a;
+    spaceship s;
+    collide(static_cast<thing&>(a), s);
+    cout << "-------------\n";
+    collide(static_cast<const thing&>(a), s);
+``` 
+виведе на екран:
+```
+derived
+derived const
+base
+-------------
+derived const
+base const
+```
 * можливість обирати методи, використовуючи передані аргументи, наприклад:
 ```C++
-    declare_method(abs, int)
-    define_method(abs, int n) { if(n > 0) skip_method; return -n; }
-    define_method(abs, int n) { return n; }
+    define_method(mm_abs, int)
+        match(int n) { if(n > 0) next_method; return -n; }
+        match(int n) { return n; }
+    end_method
 ```
 * мінімум кода для використання;
 * можна вказати fallback-функцію, що буде викликатися, якщо не знайдена відповідна реалізація;
+```C++
+    define_method(dump)
+        dump(int n) { cout << n << endl; }
+        dump(string s) { cout << s << endl; }
+        fallback { cout << "unknown\n"; }
+    end_method
+```
 * бібліотека дуже мала (кількасот рядків) і міститься у одному заголовному файлі.
 
 ## Важлива інформація (обмеження)
 
-* Реалізація, що розміщена вище по коду, має більший пріорітет, тому, якщо використовується диспетчеризація за базовими класами, то спочатку треба вказати реалізацію для успадкованих класів;
-* якщо треба диспетчеризація за базовим класом, то або вкажіть його третім аргументом у declare_methods, або наслідуйте його (їх) від multimethods::unknown, див. [example3.cpp](examples/example3.cpp);
+* Якщо треба диспетчеризація за базовим класом, то або вкажіть його третім аргументом у declare_methods, або наслідуйте його (їх) від multimethods::unknown, див. [example3.cpp](examples/example3.cpp);
 * для максимальної швидкодії краще обрати інший інструмент, ця бібліотека використовує dynamic_cast для пошуку відповідної реалізації, хоча у більшості випадків її швидкодії буде цілком достатньо.
 * чим більше реалізацій у одного з методів, тим більше часу може знадобиться для його виклику. Наприклад, для такого коду:
 ```C++
@@ -51,40 +81,45 @@ struct asteroid {};
 struct spaceship : multimethods::unknown {};
 struct spaceship_big : spaceship {};
 
-declare_method(collide)
-define_method(collide, asteroid&, spaceship_big&) { cout << "Big boom!\n"; }
-define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
-define_method(collide, spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }
+define_method(collide)
+    match(asteroid&, spaceship&) { cout << "boom\n"; }
+    match(asteroid&, spaceship_big&) { cout << "big boom\n"; }
+    match(spaceship&, const spaceship& s) { cout << "knock, knock\n"; }
+end_method
 
-declare_method(join, string)
-define_method(join, int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
-define_method(join, string s1, string s2) { return s1 + s2; }
-define_method_fallback(join) { return "Fallback."; }
+define_method(join, string)
+    match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
+    match(string s1, string s2) { return s1 + s2; }
+    match() { return {}; }
+    fallback { return "fallback"; }
+end_method
 
-declare_method(mm_abs, int)
-define_method(mm_abs, int n) { if(n > 0) skip_method; return -n; }
-define_method(mm_abs, int n) { return n; }
+define_method(mm_abs, int)
+    match(int n) { if(n > 0) next_method; return -n; }
+    match(int n) { return n; }
+end_method
 
 int main() {
-   asteroid a;
-   spaceship s1, s2;
-   spaceship_big bs;
+    asteroid a;
+    spaceship s;
+    spaceship_big bs;
 
-   collide(a, s1); // Boom!
-   collide(a, bs); // Big boom!
-   collide(s2, bs); // Knock, knock.
+    collide(a, s); // boom
+    collide(a, bs); // big boom
+    collide(s, bs); // knock, knock
 
-   try {
-       collide(a, true);
-   } catch(multimethods::not_implemented& e) {
-       cout << e.what() << endl; // collide: not_implemented
-   }
+    try {
+        collide(a, true);
+    } catch(multimethods::not_implemented& e) {
+        cout << e.what() << endl; // collide: not_implemented
+    }
 
-   cout << join(1, 2, 3) << endl; // 123
-   cout << join("Hello,"s, " world."s) << endl; // Hello, world.
-   cout << join(a, s1) << endl; // Fallback.
+    cout << join(1, 2, 3) << endl; // 123
+    cout << join("Hello,"s, " world."s) << endl; // Hello, world.
+    cout << join() << endl; //
+    cout << join(a, s) << endl; // fallback
 
-   cout << mm_abs(-10) << endl; // 10
-   cout << mm_abs(10) << endl; // 10
+    cout << mm_abs(-10) << endl; // 10
+    cout << mm_abs(10) << endl; // 10
 }
 ```
