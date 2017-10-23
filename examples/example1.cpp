@@ -26,12 +26,12 @@ end_method
 
 int main() {
     asteroid a;
-    spaceship s1, s2;
+    spaceship s;
     spaceship_big bs;
 
-    collide(a, s1); // Boom!
+    collide(a, s); // Boom!
     collide(a, bs); // Big boom!
-    collide(s2, bs); // Knock, knock.
+    collide(s, bs); // Knock, knock.
 
     try {
         collide(a, true);
@@ -42,7 +42,7 @@ int main() {
     cout << join(1, 2, 3) << endl; // 123
     cout << join("Hello,"s, " world."s) << endl; // Hello, world.
     cout << join() << endl; //
-    cout << join(a, s1) << endl; // Fallback.
+    cout << join(a, s) << endl; // Fallback.
 
     cout << mm_abs(-10) << endl; // 10
     cout << mm_abs(10) << endl; // 10
