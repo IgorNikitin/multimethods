@@ -32,9 +32,9 @@ base const
 ```
 * можливість обирати методи, використовуючи передані аргументи, наприклад:
 ```C++
-    define_method(mm_abs, int)
+    define_method(my_abs, int)
         match(int n) { if(n > 0) next_method; return -n; }
-        match(int n) { return n; }
+        match(int n) { if(n < 0) next_method; return n; }
     end_method
 ```
 * мінімум кода для використання;
@@ -78,14 +78,17 @@ base const
 #include <multimethods.h>
 using namespace std;
 
-struct asteroid {};
-struct spaceship : multimethods::unknown {};
-struct spaceship_big : spaceship {};
+struct thing : multimethods::unknown {};
+struct asteroid : thing {};
+struct bullet : thing {};
+struct spaceship : thing {};
 
 define_method(collide)
+    match(asteroid&, asteroid&) { cout << "traverse\n"; }
+    match(asteroid&, bullet&) { cout << "hit\n"; }
     match(asteroid&, spaceship&) { cout << "boom\n"; }
-    match(asteroid&, spaceship_big&) { cout << "big boom\n"; }
-    match(spaceship&, const spaceship& s) { cout << "knock, knock\n"; }
+    match(thing& t, asteroid& a) { collide(a, t); }
+    fallback {}
 end_method
 
 define_method(join, string)
@@ -95,22 +98,12 @@ define_method(join, string)
     fallback { return "fallback"; }
 end_method
 
-define_method(mm_abs, int)
-    match(int n) { if(n > 0) next_method; return -n; }
-    match(int n) { return n; }
-end_method
-
 int main() {
-    asteroid a;
-    spaceship s;
-    spaceship_big bs;
-
-    collide(a, s); // boom
-    collide(a, bs); // big boom
-    collide(s, bs); // knock, knock
+    collide(asteroid(), spaceship()); // boom
+    collide(bullet(), asteroid()); // hit
 
     try {
-        collide(a, true);
+        collide(asteroid(), true);
     } catch(multimethods::not_implemented& e) {
         cout << e.what() << endl; // collide: not_implemented
     }
@@ -118,9 +111,6 @@ int main() {
     cout << join(1, 2, 3) << endl; // 123
     cout << join("Hello,"s, " world."s) << endl; // Hello, world.
     cout << join() << endl; //
-    cout << join(a, s) << endl; // fallback
-
-    cout << mm_abs(-10) << endl; // 10
-    cout << mm_abs(10) << endl; // 10
+    cout << join(false) << endl; // fallback
 }
 ```
