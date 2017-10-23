@@ -54,7 +54,7 @@
 //   declare_method(collide)
 //   define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
 //
-#define match , +[]
+#define match(...) , +[](__VA_ARGS__) -> mm_ret_type_t
 
 #define end_method \
             }; \
