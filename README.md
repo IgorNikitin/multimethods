@@ -41,8 +41,8 @@ base const
 * можна вказати fallback-функцію, що буде викликатися, якщо не знайдена відповідна реалізація;
 ```C++
     define_method(dump)
-        dump(int n) { cout << n << endl; }
-        dump(string s) { cout << s << endl; }
+        match(int n) { cout << n << endl; }
+        match(string s) { cout << s << endl; }
         fallback { cout << "unknown\n"; }
     end_method
 ```
