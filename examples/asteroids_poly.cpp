@@ -1,13 +1,13 @@
 #include <iostream>
 #include <multimethods.h>
 using namespace std;
+using thing = multimethods::unknown;
 
-struct thing { virtual ~thing(){} };
 struct asteroid : thing {};
 struct bullet : thing {};
 struct spaceship : thing {};
 
-define_method(collide, void, thing)
+define_method(collide)
     match(asteroid&, asteroid&) { cout << "Traverse\n"; }
     match(asteroid&, bullet&) { cout << "Hit\n"; }
     match(asteroid&, spaceship&) { cout << "Boom\n"; }
