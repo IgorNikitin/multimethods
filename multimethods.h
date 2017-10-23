@@ -27,9 +27,10 @@
     namespace mm_namespace_ ## name { \
         using mm_base_t     = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::base; \
         using mm_ret_type_t = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::type; \
+        using mm_method_t   = ::multimethods::detail::abstract_method<mm_ret_type_t, mm_base_t>; \
         \
-        static inline std::vector<::multimethods::detail::abstract_method<mm_ret_type_t, mm_base_t>*> g_funcs; \
-        static inline mm_ret_type_t(*fallback_)() { nullptr }; \
+        static inline std::vector<mm_method_t*> g_funcs; \
+        static inline mm_method_t* g_fallback { nullptr }; \
     }; \
     \
     template<class... Args> inline \
@@ -40,9 +41,12 @@
                     return ::multimethods::detail::method_result<mm_namespace_ ## name::mm_ret_type_t>::unwrap(r); \
             } catch(::multimethods::try_next&) { \
             } \
-        return mm_namespace_ ## name ::fallback_ \
-            ? (*mm_namespace_ ## name ::fallback_)() \
-            : throw ::multimethods::not_implemented(#name ": not_implemented."); \
+        if(mm_namespace_ ## name ::g_fallback) { \
+            ::multimethods::detail::fallback_t fb; \
+            if(auto r = mm_namespace_ ## name ::g_fallback->call(fb)) \
+                return ::multimethods::detail::method_result<mm_namespace_ ## name::mm_ret_type_t>::unwrap(r); \
+        } \
+        throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
     namespace mm_namespace_ ## name { \
@@ -60,6 +64,12 @@
             }; \
             ::multimethods::detail::sort_functions sorter(funcs); \
             g_funcs = sorter.sort<mm_ret_type_t, mm_base_t>(); \
+            for(auto it = g_funcs.begin() ; it != g_funcs.end() ; ++it) \
+                if((*it)->is_fallback()) { \
+                    g_fallback = *it; \
+                    g_funcs.erase(it); \
+                    break; \
+                } \
             return true; \
         }(); \
     }
@@ -199,6 +209,7 @@ struct abstract_method {
     virtual ret_t call(arg<B>, arg<B>, arg<B>) { return {}; }
     virtual ret_t call(arg<B>, arg<B>, arg<B>, arg<B>) { return {}; }
     virtual ret_t call(arg<B>, arg<B>, arg<B>, arg<B>, arg<B>) { return {}; }
+    virtual bool is_fallback() const { return false; }
 };
 
 
@@ -458,6 +469,8 @@ struct method_1 final : abstract_method<T, B> {
             return f_(*u1);
         return {};
     }
+
+    virtual bool is_fallback() const { return is_same_v<fallback_t, typename function_traits<F>::arg1_type>; }
 };
 
 /**********************************************************************************************/
@@ -471,6 +484,8 @@ struct method_1_void final : abstract_method<T, B> {
             { f_(*u1); return true; }
         return false;
     }
+
+    virtual bool is_fallback() const { return is_same_v<fallback_t, typename function_traits<F>::arg1_type>; }
 };
 
 /**********************************************************************************************/
@@ -783,9 +798,7 @@ struct sort_functions {
             indexes[i] = i;
 
         std::sort(indexes, indexes + N, [](int a, int b) {
-            #define MM_CASE_A(I) \
-                if(a == I) return sort_functions::pred<F ## I>(b)
-
+            #define MM_CASE_A(I) if(a == I) return sort_functions::pred<F ## I>(b)
             MM_CASE_A(0); MM_CASE_A(1); MM_CASE_A(2); MM_CASE_A(3);
             MM_CASE_A(4); MM_CASE_A(5); MM_CASE_A(6); MM_CASE_A(7);
             MM_CASE_A(8); MM_CASE_A(9); MM_CASE_A(10); MM_CASE_A(11);
@@ -795,7 +808,6 @@ struct sort_functions {
             MM_CASE_A(24); MM_CASE_A(25); MM_CASE_A(26); MM_CASE_A(27);
             MM_CASE_A(28); MM_CASE_A(29); MM_CASE_A(30); MM_CASE_A(31);
             MM_CASE_A(32);
-
             #undef MM_CASE_A
 
             return a<b;
@@ -805,10 +817,7 @@ struct sort_functions {
         for( int i = 0 ; i < N ; ++i )
         {
             switch(indexes[i]) {
-
-                #define MM_MAKE_METHOD(I) \
-                    case I: r[i] = make_method<TR, BR, F ## I>(std::get<I<N?I+1:1>(funcs_)); break
-
+                #define MM_MAKE_METHOD(I) case I: r[i] = make_method<TR, BR, F ## I>(std::get<I < N ? I + 1 : 1>(funcs_)); break
                 MM_MAKE_METHOD(0); MM_MAKE_METHOD(1); MM_MAKE_METHOD(2); MM_MAKE_METHOD(3);
                 MM_MAKE_METHOD(4); MM_MAKE_METHOD(5); MM_MAKE_METHOD(6); MM_MAKE_METHOD(7);
                 MM_MAKE_METHOD(8); MM_MAKE_METHOD(9); MM_MAKE_METHOD(10); MM_MAKE_METHOD(11);
@@ -818,7 +827,6 @@ struct sort_functions {
                 MM_MAKE_METHOD(24); MM_MAKE_METHOD(25); MM_MAKE_METHOD(26); MM_MAKE_METHOD(27);
                 MM_MAKE_METHOD(28); MM_MAKE_METHOD(29); MM_MAKE_METHOD(30); MM_MAKE_METHOD(31);
                 MM_MAKE_METHOD(32);
-
                 #undef MM_MAKE_METHOD
 
                 default:;
