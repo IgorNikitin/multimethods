@@ -38,7 +38,7 @@
             try { \
                 if(auto r = m->call(args...)) \
                     return ::multimethods::detail::method_result<mm_namespace_ ## name::mm_ret_type_t>::unwrap(r); \
-            } catch(::multimethods::not_match&) { \
+            } catch(::multimethods::try_next&) { \
             } \
         return mm_namespace_ ## name ::fallback_ \
             ? (*mm_namespace_ ## name ::fallback_)() \
@@ -66,17 +66,17 @@
 /**********************************************************************************************/
 // Adds fallback handler for a multimethod.
 //
-//   declare_method(collide)
-//   define_method_fallback(collide) { cout << "All is fine.\n"; }
+//   define_method(collide)
+//   fallback(collide) { cout << "All is fine.\n"; }
 //
-#define fallback , +[]()
+#define fallback , +[](::multimethods::detail::fallback_t) -> mm_ret_type_t
 
 /**********************************************************************************************/
 // Skip current method in runtime to search for more suitable implementation.
 //
 //   define_method(mm_abs, int n) { if(n > 0) skip_method; return -n; }
 //
-#define next_method throw ::multimethods::not_match();
+#define next_method throw ::multimethods::try_next();
 
 
 /**********************************************************************************************/
@@ -95,8 +95,8 @@ struct not_implemented final : std::exception {
 /**********************************************************************************************/
 // Exception to skip a method and try next one.
 //
-struct not_match final : std::exception {
-    virtual const char* what() const noexcept { return "multimethods::not_match"; }
+struct try_next final : std::exception {
+    virtual const char* what() const noexcept { return "next_method"; }
 };
 
 /**********************************************************************************************/
@@ -120,6 +120,9 @@ using namespace std;
 
 /**********************************************************************************************/
 static inline const std::type_index g_dummy_type_index( typeid(int) );
+
+/**********************************************************************************************/
+struct fallback_t {};
 
 /**********************************************************************************************/
 // Class to store reference to an argument and cast it on call an implementation.
@@ -230,7 +233,7 @@ struct check_base_class : public check_base_class_impl<B, typename std::add_poin
 
 
 /**********************************************************************************************/
-constexpr int compare_const() { return 0; }
+template<class... Args> constexpr enable_if_t<sizeof...(Args) == 0, int> compare_const() { return 0; }
 template<class T1> constexpr int compare_const() { return 0; }
 template<class T1, class T2, class T3> constexpr int compare_const() { return 0; }
 template<class T1, class T2, class T3, class T4, class T5> constexpr int compare_const() { return 0; }
@@ -284,7 +287,7 @@ constexpr int compare_const() {
 
 
 /**********************************************************************************************/
-constexpr int compare_types() { return 0; }
+template<class... Args> constexpr enable_if_t<sizeof...(Args) == 0, int> compare_types() { return 0; }
 template<class T1> constexpr int compare_types() { return 0; }
 template<class T1, class T2, class T3> constexpr int compare_types() { return 0; }
 template<class T1, class T2, class T3, class T4, class T5> constexpr int compare_types() { return 0; }
@@ -340,8 +343,8 @@ template<class F1, class F2>
 struct compare_methods_impl;
 
 /**********************************************************************************************/
-template<class R1, class... Args1, class... Args2>
-struct compare_methods_impl<R1(*)(Args1...), R1(*)(Args2...)> {
+template<class R, class... Args1, class... Args2>
+struct compare_methods_impl<R(*)(Args1...), R(*)(Args2...)> {
     static constexpr int value_types = sizeof...(Args1) < sizeof...(Args2)
         ? -1
         : sizeof...(Args1) > sizeof...(Args2)

@@ -15,15 +15,14 @@ end_method
 define_method(join, string)
     match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
     match(string s1, string s2) { return s1 + s2; }
-//    fallback { return "Fallback."; }
+    match() { return {}; }
+    fallback { return "Fallback."; }
 end_method
 
 define_method(mm_abs, int)
     match(int n) { if(n > 0) next_method; return -n; }
     match(int n) { return n; }
 end_method
-
-// TODO: const example - match to const or not const, sort by const
 
 int main() {
     asteroid a;
@@ -42,7 +41,8 @@ int main() {
 
     cout << join(1, 2, 3) << endl; // 123
     cout << join("Hello,"s, " world."s) << endl; // Hello, world.
-    //cout << join(a, s1) << endl; // Fallback.
+    cout << join() << endl; //
+    cout << join(a, s1) << endl; // Fallback.
 
     cout << mm_abs(-10) << endl; // 10
     cout << mm_abs(10) << endl; // 10
