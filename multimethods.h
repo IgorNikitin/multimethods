@@ -465,6 +465,14 @@ struct function_traits : public function_traits_impl<F> {
 
 
 /**********************************************************************************************/
+#define MM_CAST_1 if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
+#define MM_CAST_2 MM_CAST_1 if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
+#define MM_CAST_3 MM_CAST_2 if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
+#define MM_CAST_4 MM_CAST_3 if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
+#define MM_CAST_5 MM_CAST_4 if(auto u5 = p5.template cast<typename function_traits<F>::arg5_type>())
+#define MM_CAST_6 MM_CAST_5 if(auto u6 = p6.template cast<typename function_traits<F>::arg6_type>())
+
+/**********************************************************************************************/
 template<class T, class B, class F>
 struct method_0 final : abstract_method<T, B> {
     F f_;
@@ -488,9 +496,8 @@ struct method_1 final : abstract_method<T, B> {
     F f_;
     method_1(F f) : f_(f) {}
 
-    typename abstract_method<T, B>::ret_t call(arg<B> p) {
-        if(auto u1 = p.template cast<typename function_traits<F>::arg1_type>())
-            return f_(*u1);
+    typename abstract_method<T, B>::ret_t call(arg<B> p1) {
+        MM_CAST_1 return f_(*u1);
         return {};
     }
 
@@ -503,9 +510,8 @@ struct method_1_void final : abstract_method<T, B> {
     F f_;
     method_1_void(F f) : f_(f) {}
 
-    bool call(arg<B> p) {
-        if(auto u1 = p.template cast<typename function_traits<F>::arg1_type>())
-            { f_(*u1); return true; }
+    bool call(arg<B> p1) {
+        MM_CAST_1 { f_(*u1); return true; }
         return false;
     }
 
@@ -519,9 +525,7 @@ struct method_2 final : abstract_method<T, B> {
     method_2(F f) : f_(f) {}
 
     typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                return f_(*u1, *u2);
+        MM_CAST_2 return f_(*u1, *u2);
         return {};
     }
 };
@@ -533,9 +537,7 @@ struct method_2_void final : abstract_method<T, B> {
     method_2_void(F f) : f_(f) {}
 
     bool call(arg<B> p1, arg<B> p2) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                { f_(*u1, *u2); return true; }
+        MM_CAST_2 { f_(*u1, *u2); return true; }
         return false;
     }
 };
@@ -547,10 +549,7 @@ struct method_3 final : abstract_method<T, B> {
     method_3(F f) : f_(f) {}
 
     typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
-                        return f_(*u1, *u2, *u3);
+        MM_CAST_3 return f_(*u1, *u2, *u3);
         return {};
     }
 };
@@ -562,10 +561,7 @@ struct method_3_void final : abstract_method<T, B> {
     method_3_void(F f) : f_(f) {}
 
     bool call(arg<B> p1, arg<B> p2, arg<B> p3) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
-                    { f_(*u1, *u2, *u3); return true; }
+        MM_CAST_3 { f_(*u1, *u2, *u3); return true; }
         return false;
     }
 };
@@ -577,11 +573,7 @@ struct method_4 final : abstract_method<T, B> {
     method_4(F f) : f_(f) {}
 
     typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
-                    if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
-                        return f_(*u1, *u2, *u3, *u4);
+        MM_CAST_4 return f_(*u1, *u2, *u3, *u4);
         return {};
     }
 };
@@ -593,11 +585,7 @@ struct method_4_void final : abstract_method<T, B> {
     method_4_void(F f) : f_(f) {}
 
     bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
-                    if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
-                        { f_(*u1, *u2, *u3, *u4); return true; }
+        MM_CAST_4 { f_(*u1, *u2, *u3, *u4); return true; }
         return false;
     }
 };
@@ -609,12 +597,7 @@ struct method_5 final : abstract_method<T, B> {
     method_5(F f) : f_(f) {}
 
     typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
-                    if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
-                        if(auto u5 = p5.template cast<typename function_traits<F>::arg5_type>())
-                            return f_(*u1, *u2, *u3, *u4, *u5);
+        MM_CAST_5 return f_(*u1, *u2, *u3, *u4, *u5);
         return {};
     }
 };
@@ -626,12 +609,7 @@ struct method_5_void final : abstract_method<T, B> {
     method_5_void(F f) : f_(f) {}
 
     bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
-                    if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
-                        if(auto u5 = p5.template cast<typename function_traits<F>::arg5_type>())
-                            { f_(*u1, *u2, *u3, *u4, *u5); return true; }
+        MM_CAST_5 { f_(*u1, *u2, *u3, *u4, *u5); return true; }
         return false;
     }
 };
@@ -643,13 +621,7 @@ struct method_6 final : abstract_method<T, B> {
     method_6(F f) : f_(f) {}
 
     typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5, arg<B> p6) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
-                    if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
-                        if(auto u5 = p5.template cast<typename function_traits<F>::arg5_type>())
-                            if(auto u6 = p6.template cast<typename function_traits<F>::arg6_type>())
-                                return f_(*u1, *u2, *u3, *u4, *u5, *u6);
+        MM_CAST_6 return f_(*u1, *u2, *u3, *u4, *u5, *u6);
         return {};
     }
 };
@@ -661,13 +633,7 @@ struct method_6_void final : abstract_method<T, B> {
     method_6_void(F f) : f_(f) {}
 
     bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5, arg<B> p6) {
-        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
-            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
-                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
-                    if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
-                        if(auto u5 = p5.template cast<typename function_traits<F>::arg5_type>())
-                            if(auto u6 = p6.template cast<typename function_traits<F>::arg6_type>())
-                                { f_(*u1, *u2, *u3, *u4, *u5, *u6); return true; }
+        MM_CAST_6 { f_(*u1, *u2, *u3, *u4, *u5, *u6); return true; }
         return false;
     }
 };
@@ -816,20 +782,20 @@ struct sort_functions {
 
         for(int i = 0 ; i < N ; ++i) {
             switch(indexes[i]) {
-                #define MM_MAKE_METHOD(I) \
+                #define MM_FILL_VECTOR(I) \
                     case I: r[i] = make_method<TR, BR, F ## I>(std::get<I < N ? I + 1 : 1>(funcs_)); break
 
-                MM_MAKE_METHOD(0); MM_MAKE_METHOD(1); MM_MAKE_METHOD(2); MM_MAKE_METHOD(3);
-                MM_MAKE_METHOD(4); MM_MAKE_METHOD(5); MM_MAKE_METHOD(6); MM_MAKE_METHOD(7);
-                MM_MAKE_METHOD(8); MM_MAKE_METHOD(9); MM_MAKE_METHOD(10); MM_MAKE_METHOD(11);
-                MM_MAKE_METHOD(12); MM_MAKE_METHOD(13); MM_MAKE_METHOD(14); MM_MAKE_METHOD(15);
-                MM_MAKE_METHOD(16); MM_MAKE_METHOD(17); MM_MAKE_METHOD(18); MM_MAKE_METHOD(19);
-                MM_MAKE_METHOD(20); MM_MAKE_METHOD(21); MM_MAKE_METHOD(22); MM_MAKE_METHOD(23);
-                MM_MAKE_METHOD(24); MM_MAKE_METHOD(25); MM_MAKE_METHOD(26); MM_MAKE_METHOD(27);
-                MM_MAKE_METHOD(28); MM_MAKE_METHOD(29); MM_MAKE_METHOD(30); MM_MAKE_METHOD(31);
-                MM_MAKE_METHOD(32);
+                MM_FILL_VECTOR(0); MM_FILL_VECTOR(1); MM_FILL_VECTOR(2); MM_FILL_VECTOR(3);
+                MM_FILL_VECTOR(4); MM_FILL_VECTOR(5); MM_FILL_VECTOR(6); MM_FILL_VECTOR(7);
+                MM_FILL_VECTOR(8); MM_FILL_VECTOR(9); MM_FILL_VECTOR(10); MM_FILL_VECTOR(11);
+                MM_FILL_VECTOR(12); MM_FILL_VECTOR(13); MM_FILL_VECTOR(14); MM_FILL_VECTOR(15);
+                MM_FILL_VECTOR(16); MM_FILL_VECTOR(17); MM_FILL_VECTOR(18); MM_FILL_VECTOR(19);
+                MM_FILL_VECTOR(20); MM_FILL_VECTOR(21); MM_FILL_VECTOR(22); MM_FILL_VECTOR(23);
+                MM_FILL_VECTOR(24); MM_FILL_VECTOR(25); MM_FILL_VECTOR(26); MM_FILL_VECTOR(27);
+                MM_FILL_VECTOR(28); MM_FILL_VECTOR(29); MM_FILL_VECTOR(30); MM_FILL_VECTOR(31);
+                MM_FILL_VECTOR(32);
 
-                #undef MM_MAKE_METHOD
+                #undef MM_FILL_VECTOR
 
                 default:;
             }
