@@ -76,7 +76,7 @@
 //
 //   define_method(mm_abs, int n) { if(n > 0) skip_method; return -n; }
 //
-#define skip_method throw ::multimethods::not_match();
+#define next_method throw ::multimethods::not_match();
 
 
 /**********************************************************************************************/
@@ -116,6 +116,9 @@ struct unknown {
 namespace detail {
 
 /**********************************************************************************************/
+using namespace std;
+
+/**********************************************************************************************/
 static inline const std::type_index g_dummy_type_index( typeid(int) );
 
 /**********************************************************************************************/
@@ -130,10 +133,10 @@ struct arg final {
 
     // Constructs from polymorphic value - we can try to cast it to the base class,
     // and cast to a destination class later.
-    template<class T, class = typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value && !std::is_base_of<B, T>::value>::type>
+    template<class T, class = enable_if_t<is_polymorphic_v<decay_t<T>> && !is_base_of_v<B, T>>>
     arg<B>(T& v)
     : base_(const_cast<B*>(dynamic_cast<const B*>(&v)))
-    , const_(std::is_const<T>::value)
+    , const_(is_const_v<remove_reference_t<T>>)
     , p_(const_cast<void*>(reinterpret_cast<const void*>(&v)))
     , type_(typeid(v)) {
     }
@@ -143,23 +146,23 @@ struct arg final {
     template<class T, class = typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value && std::is_base_of<B, T>::value>::type, class = void>
     arg<B>(T& v)
     : base_(const_cast<B*>(static_cast<const B*>(&v)))
-    , const_(std::is_const<T>::value)
+    , const_(is_const_v<remove_reference_t<T>>)
     , type_(g_dummy_type_index) {
     }
 
     // Constructs from non-polymorphic value.
-    template<class T, class = typename std::enable_if<!std::is_polymorphic<typename std::decay<T>::type>::value>::type, class = void, class = void>
+    template<class T, class = typename std::enable_if<!std::is_polymorphic_v<std::decay_t<T>>>::type, class = void, class = void>
     arg<B>(T& v)
     : base_(nullptr)
-    , const_(std::is_const<T>::value)
+    , const_(is_const_v<remove_reference_t<T>>)
     , p_(const_cast<void*>(reinterpret_cast<const void*>(&v)))
     , type_(typeid(v)) {
     }
 
     // Cast to a polymorphic type
     template<class T>
-    auto cast() -> typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value, typename std::remove_reference<T>::type*>::type {
-        if(std::is_const<typename std::remove_reference<T>::type>::value || !const_ ) {
+    auto cast() -> typename std::enable_if<std::is_polymorphic<std::decay_t<T>>::value, std::remove_reference_t<T>*>::type {
+        if(is_const_v<remove_reference_t<T>> || !const_ ) {
             if(auto p = dynamic_cast<typename std::decay<T>::type*>(base_))
                 return p;
             if(!base_ && type_ == typeid(T))
@@ -170,10 +173,10 @@ struct arg final {
 
     // Cast to a non-polymorphic type
     template<class T>
-    auto cast() -> typename std::enable_if<!std::is_polymorphic<typename std::decay<T>::type>::value, typename std::remove_reference<T>::type*>::type {
-        if(std::is_const<typename std::remove_reference<T>::type>::value || !const_ ) {
+    auto cast() -> typename std::enable_if_t<!std::is_polymorphic_v<std::decay_t<T>>, std::remove_reference_t<T>*> {
+        if(std::is_const_v<std::remove_reference_t<T>> || !const_ ) {
             if(!base_ && type_ == typeid(T))
-                return reinterpret_cast<typename std::remove_reference<T>::type*>(p_);
+                return reinterpret_cast<std::remove_reference_t<T>*>(p_);
         }
         return nullptr;
     }
@@ -223,6 +226,61 @@ struct check_base_class_impl<B, R(*)(Args...)> {
 template<class B, class F>
 struct check_base_class : public check_base_class_impl<B, typename std::add_pointer<F>::type> {
 };
+
+
+
+/**********************************************************************************************/
+constexpr int compare_const() { return 0; }
+template<class T1> constexpr int compare_const() { return 0; }
+template<class T1, class T2, class T3> constexpr int compare_const() { return 0; }
+template<class T1, class T2, class T3, class T4, class T5> constexpr int compare_const() { return 0; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7> constexpr int compare_const() { return 0; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9> constexpr int compare_const() { return 0; }
+
+/**********************************************************************************************/
+template<class T, class U>
+constexpr int compare_const() {
+    if constexpr(is_same_v<decay_t<T>, decay_t<U>>) {
+        if constexpr(is_const_v<remove_reference_t<T>>)
+            return is_const_v<remove_reference_t<U>> ? 0 : 1;
+        else if constexpr(is_const_v<remove_reference_t<U>>) {
+            return -1;
+        }
+    }
+    return 0;
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class U1, class U2>
+constexpr int compare_const() {
+    if(constexpr int r = compare_const<T1, U1>() )
+        return r;
+    return compare_const<T2, U2>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class U1, class U2, class U3>
+constexpr int compare_const() {
+    if(constexpr int r = compare_const<T1, U1>() )
+        return r;
+    return compare_const<T2, T3, U2, U3>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class U1, class U2, class U3, class U4>
+constexpr int compare_const() {
+    if(constexpr int r = compare_const<T1, U1>() )
+        return r;
+    return compare_const<T2, T3, T4, U2, U3, U4>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class T5, class U1, class U2, class U3, class U4, class U5>
+constexpr int compare_const() {
+    if(constexpr int r = compare_const<T1, U1>() )
+        return r;
+    return compare_const<T2, T3, T4, T5, U2, U3, U4, U5>();
+}
 
 
 /**********************************************************************************************/
@@ -282,19 +340,17 @@ template<class F1, class F2>
 struct compare_methods_impl;
 
 /**********************************************************************************************/
-template<class R1>
-struct compare_methods_impl<R1(*const)(), R1(*const)()> {
-    static constexpr int value = 0;
-};
-
-/**********************************************************************************************/
 template<class R1, class... Args1, class... Args2>
 struct compare_methods_impl<R1(*)(Args1...), R1(*)(Args2...)> {
-    static constexpr int value = sizeof...(Args1) < sizeof...(Args2)
+    static constexpr int value_types = sizeof...(Args1) < sizeof...(Args2)
         ? -1
         : sizeof...(Args1) > sizeof...(Args2)
           ? 1
           : compare_types<Args1..., Args2...>();
+
+    static constexpr int value = value_types
+          ? value_types
+          : compare_const<Args1..., Args2...>();
 };
 
 /**********************************************************************************************/
