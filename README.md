@@ -5,10 +5,9 @@ Multimethods for C++17
 
 * Підтримка неполіморфних типів;
 * довільна кількість параметрів у реалізаціях;
-* можливість отримати результат від функції;
 * бібліотека сортує реалізації, використувачи спадкування та константність, спочатку обираються успадковані класи, якщо ж типи співпадають для всіх параметрів, то реалізація без const (типи перевіряються зліва-направо як для спадкування, так і для наявності const в них) має вищій пріоритет, наприклад:
 ```C++
-    define_method(collide)
+    void multi_method(collide)
         match(const thing&, spaceship&) { cout << "base const\n"; }
         match(thing&, spaceship&) { cout << "base\n"; }
         match(const asteroid&, spaceship&) { cout << "derived const\n"; next_method; }
@@ -32,7 +31,7 @@ Multimethods for C++17
 ```
 * можливість обирати методи, використовуючи передані аргументи, наприклад:
 ```C++
-    define_method(my_abs, int)
+    int multi_method(my_abs)
         match(int n) { if(n > 0) next_method; return -n; }
         match(int n) { if(n < 0) next_method; return n; }
     end_method
@@ -40,7 +39,7 @@ Multimethods for C++17
 * мінімум кода для використання;
 * можна вказати fallback-функцію, що буде викликатися, якщо не знайдена відповідна реалізація;
 ```C++
-    define_method(dump)
+    void multi_method(dump)
         match(int n) { cout << n << endl; }
         match(string s) { cout << s << endl; }
         fallback { cout << "unknown\n"; }
@@ -59,7 +58,7 @@ Multimethods for C++17
     struct asteroid : thing {};
     struct spaceship : thing {};
 
-    define_method(collide)
+    void multi_method(collide)
         match(asteroid&, asteroid&) {}
         match(asteroid&, spaceship&) {}
         match(spaceship&, asteroid&) {}
@@ -84,13 +83,13 @@ struct car : vehicle {};
 struct inspector : multimethods::unknown {};
 struct state_inspector : inspector {};
 
-define_method(inspect)
+void multi_method(inspect)
     match(vehicle&, inspector&) { cout << "Inspect vehicle.\n"; }
     match(car&, inspector&) { cout << "Inspect seat belts.\n"; next_method; }
     match(car&, state_inspector&) { cout << "Check insurance.\n"; next_method; }
 end_method
 
-define_method(join, string)
+string multi_method(join)
     match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
     match(string s1, string s2) { return s1 + s2; }
     fallback { return "fallback"; }
