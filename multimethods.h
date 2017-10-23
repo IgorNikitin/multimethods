@@ -16,14 +16,14 @@
 
 
 /**********************************************************************************************/
-// Declares a new multimethod and optionally specifies it's result type and base class
+// Defines a new multimethod and optionally specifies it's result type and base class
 // for polymorphic types.
 //
 //   declare_method(collide)
 //   declare_method(concat, string)
 //   declare_method(concat, string, I_Unknown)
 //
-#define declare_method(name, ...) \
+#define define_method(name, ...) \
     using g_mm_b_ ## name = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::base; \
     using g_mm_r_ ## name = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::type; \
     \
@@ -44,6 +44,8 @@
             ? (*g_mm_f_ ## name ::fallback_)() \
             : throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
+    \
+    static bool MM_JOIN(_mm_init_, __LINE__) = []{ const std::tuple funcs { true
 
 /**********************************************************************************************/
 // Adds implementation of a multimethod.
@@ -51,12 +53,12 @@
 //   declare_method(collide)
 //   define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
 //
-#define define_method(name, ...) \
-   static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__); \
-   static_assert(::multimethods::detail::check_base_class<g_mm_b_ ## name, decltype(*MM_JOIN(_mm_impl_, __LINE__))>::value, \
-   "For polymorphic types in a parameters list need to specify common base class on call 'declare_method' function, or use 'multimethods::unknown' as base class."); \
-   static bool MM_JOIN(_mm_init_, __LINE__) = []{ g_mm_f_ ## name ::funcs_.push_back(::multimethods::detail::make_method<g_mm_r_ ## name, g_mm_b_ ## name, MM_JOIN(_mm_impl_, __LINE__)>()); return true; }(); \
-   static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(__VA_ARGS__)
+#define match ,+[]
+
+#define end_method(name) \
+    }; \
+    g_mm_f_ ## name::funcs_ = ::multimethods::detail::sort_functions(funcs).sort<g_mm_r_ ## name, g_mm_b_ ## name>(); \
+    return true; }();
 
 /**********************************************************************************************/
 // Adds fallback handler for a multimethod.
