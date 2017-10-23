@@ -6,39 +6,44 @@ struct asteroid {};
 struct spaceship : multimethods::unknown {};
 struct spaceship_big : spaceship {};
 
-declare_method(collide)
-define_method(collide, asteroid&, spaceship_big&) { cout << "Big boom!\n"; }
-define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
-define_method(collide, spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }
+define_method(collide)
+    match(asteroid&, spaceship&) { cout << "Boom!\n"; }
+    match(asteroid&, spaceship_big&) { cout << "Big boom!\n"; }
+    match(spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }
+end_method
 
-declare_method(join, string)
-define_method(join, int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
-define_method(join, string s1, string s2) { return s1 + s2; }
-define_method_fallback(join) { return "Fallback."; }
+define_method(join, string)
+    match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
+    match(string s1, string s2) { return s1 + s2; }
+    match() { return {}; }
+    fallback { return "Fallback."; }
+end_method
 
-declare_method(mm_abs, int)
-define_method(mm_abs, int n) { if(n > 0) skip_method; return -n; }
-define_method(mm_abs, int n) { return n; }
+define_method(mm_abs, int)
+    match(int n) { if(n > 0) next_method; return -n; }
+    match(int n) { return n; }
+end_method
 
 int main() {
-   asteroid a;
-   spaceship s1, s2;
-   spaceship_big bs;
+    asteroid a;
+    spaceship s1, s2;
+    spaceship_big bs;
 
-   collide(a, s1); // Boom!
-   collide(a, bs); // Big boom!
-   collide(s2, bs); // Knock, knock.
+    collide(a, s1); // Boom!
+    collide(a, bs); // Big boom!
+    collide(s2, bs); // Knock, knock.
 
-   try {
-       collide(a, true);
-   } catch(multimethods::not_implemented& e) {
-       cout << e.what() << endl; // collide: not_implemented
-   }
+    try {
+        collide(a, true);
+    } catch(multimethods::not_implemented& e) {
+        cout << e.what() << endl; // collide: not_implemented
+    }
 
-   cout << join(1, 2, 3) << endl; // 123
-   cout << join("Hello,"s, " world."s) << endl; // Hello, world.
-   cout << join(a, s1) << endl; // Fallback.
+    cout << join(1, 2, 3) << endl; // 123
+    cout << join("Hello,"s, " world."s) << endl; // Hello, world.
+    cout << join() << endl; //
+    cout << join(a, s1) << endl; // Fallback.
 
-   cout << mm_abs(-10) << endl; // 10
-   cout << mm_abs(10) << endl; // 10
+    cout << mm_abs(-10) << endl; // 10
+    cout << mm_abs(10) << endl; // 10
 }

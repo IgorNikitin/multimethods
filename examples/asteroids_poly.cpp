@@ -7,12 +7,13 @@ struct asteroid : thing {};
 struct bullet : thing {};
 struct spaceship : thing {};
 
-declare_method(collide, string, thing)
-define_method(collide, asteroid&, asteroid&) { return "Traverse"; }
-define_method(collide, asteroid&, bullet&) { return "Hit"; }
-define_method(collide, asteroid&, spaceship&) { return "Boom"; }
-define_method(collide, thing& t, asteroid& a) { return collide(a, t); }
-define_method_fallback(collide) { return {}; }
+define_method(collide, string, thing)
+    match(asteroid&, asteroid&) { return "Traverse"; }
+    match(asteroid&, bullet&) { return "Hit"; }
+    match(asteroid&, spaceship&) { return "Boom"; }
+    match(thing& t, asteroid& a) { return collide(a, t); }
+    fallback { return ""; }
+end_method
 
 int main() {
    asteroid a;
