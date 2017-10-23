@@ -55,7 +55,7 @@ Multimethods for C++17
 * про неможливість виклику функції з неправильними аргументами можна буде дізнатися тільки у рантаймі (виключення multimethods::not_implemented);
 * чим більше реалізацій у одного з методів, тим більше часу може знадобиться для його виклику. Наприклад, для такого коду:
 ```C++
-    struct thing : multimethods::unknown {};
+    using thing = multimethods::unknown;
     struct asteroid : thing {};
     struct spaceship : thing {};
 
