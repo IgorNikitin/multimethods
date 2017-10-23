@@ -15,10 +15,11 @@ struct reason : unknown {};
 struct business : reason {};
 struct comfort : reason {};
 
-declare_method(approve, bool)
-define_method(approve, const expense&, const ceo&, const reason&) { return true; }
-define_method(approve, const cab&, const manager&, const business&) { return true; }
-define_method_fallback(approve) { return false; }
+define_method(approve, bool)
+    match(const expense&, const ceo&, const reason&) { return true; }
+    match(const cab&, const manager&, const business&) { return true; }
+    fallback { return false; }
+end_method
 
 int main() {
     cout << boolalpha;
@@ -28,6 +29,5 @@ int main() {
 
     cout << approve(cab(), manager(), business()) << endl; // true
     cout << approve(cab(), manager(), comfort()) << endl; // false
-
-  return 0;
+    cout << approve(plane(), manager(), comfort()) << endl; // false
 }

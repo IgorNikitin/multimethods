@@ -2,39 +2,32 @@
 #include <multimethods.h>
 using namespace std;
 
-struct asteroid {};
-struct spaceship : multimethods::unknown {};
-struct spaceship_big : spaceship {};
+struct thing : multimethods::unknown {};
+struct asteroid : thing {};
+struct bullet : thing {};
+struct spaceship : thing {};
 
 define_method(collide)
-    match(asteroid&, spaceship&) { cout << "Boom!\n"; }
-    match(asteroid&, spaceship_big&) { cout << "Big boom!\n"; }
-    match(spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }
+    match(asteroid&, asteroid&) { cout << "traverse\n"; }
+    match(asteroid&, bullet&) { cout << "hit\n"; }
+    match(asteroid&, spaceship&) { cout << "boom\n"; }
+    match(thing& t, asteroid& a) { collide(a, t); }
+    fallback {}
 end_method
 
 define_method(join, string)
     match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
     match(string s1, string s2) { return s1 + s2; }
     match() { return {}; }
-    fallback { return "Fallback."; }
-end_method
-
-define_method(mm_abs, int)
-    match(int n) { if(n > 0) next_method; return -n; }
-    match(int n) { return n; }
+    fallback { return "fallback"; }
 end_method
 
 int main() {
-    asteroid a;
-    spaceship s;
-    spaceship_big bs;
-
-    collide(a, s); // Boom!
-    collide(a, bs); // Big boom!
-    collide(s, bs); // Knock, knock.
+    collide(asteroid(), spaceship()); // boom
+    collide(bullet(), asteroid()); // hit
 
     try {
-        collide(a, true);
+        collide(asteroid(), true);
     } catch(multimethods::not_implemented& e) {
         cout << e.what() << endl; // collide: not_implemented
     }
@@ -42,8 +35,5 @@ int main() {
     cout << join(1, 2, 3) << endl; // 123
     cout << join("Hello,"s, " world."s) << endl; // Hello, world.
     cout << join() << endl; //
-    cout << join(a, s) << endl; // Fallback.
-
-    cout << mm_abs(-10) << endl; // 10
-    cout << mm_abs(10) << endl; // 10
+    cout << join(false) << endl; // fallback
 }

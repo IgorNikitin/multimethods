@@ -7,12 +7,12 @@ struct asteroid : thing {};
 struct bullet : thing {};
 struct spaceship : thing {};
 
-define_method(collide, string, thing)
-    match(asteroid&, asteroid&) { return "Traverse"; }
-    match(asteroid&, bullet&) { return "Hit"; }
-    match(asteroid&, spaceship&) { return "Boom"; }
-    match(thing& t, asteroid& a) { return collide(a, t); }
-    fallback { return ""; }
+define_method(collide, void, thing)
+    match(asteroid&, asteroid&) { cout << "Traverse\n"; }
+    match(asteroid&, bullet&) { cout << "Hit\n"; }
+    match(asteroid&, spaceship&) { cout << "Boom\n"; }
+    match(thing& t, asteroid& a) { collide(a, t); }
+    fallback {}
 end_method
 
 int main() {
@@ -20,10 +20,10 @@ int main() {
    bullet b;
    spaceship s;
 
-   cout << collide(a, a) << endl; // 'Traverse'
-   cout << collide(a, b) << endl; // 'Hit'
-   cout << collide(b, a) << endl; // 'Hit'
-   cout << collide(s, a) << endl; // 'Boom'
-   cout << collide(a, s) << endl; // 'Boom'
-   cout << collide(b, b) << endl; // fallback
+   collide(a, a); // 'Traverse'
+   collide(a, b); // 'Hit'
+   collide(b, a); // 'Hit'
+   collide(s, a); // 'Boom'
+   collide(a, s); // 'Boom'
+   collide(b, b); // fallback
 }

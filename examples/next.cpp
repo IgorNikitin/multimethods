@@ -3,19 +3,20 @@
 using namespace multimethods;
 using namespace std;
 
-struct Vehicle : unknown {};
-struct Car : Vehicle {};
-struct Truck : Vehicle {};
-struct Inspector : unknown {};
-struct StateInspector : Inspector {};
+struct vehicle : unknown {};
+struct car : vehicle {};
+struct inspector : unknown {};
+struct state_inspector : inspector {};
 
-declare_method(inspect)
-define_method(inspect, Car&, StateInspector&) { cout << "Check insurance.\n"; skip_method; }
-define_method(inspect, Car&, Inspector&) { cout << "Inspect seat belts.\n"; skip_method; }
-define_method(inspect, Vehicle&, Inspector&) { cout << "Inspect vehicle.\n"; }
+define_method(inspect)
+    match(vehicle&, inspector&) { cout << "Inspect vehicle.\n"; }
+    match(car&, inspector&) { cout << "Inspect seat belts.\n"; next_method; }
+    match(car&, state_inspector&) { cout << "Check insurance.\n"; next_method; }
+end_method
 
 int main() {
-  Car car;
-  StateInspector inspector;
+  car car;
+  state_inspector inspector;
+
   inspect(car, inspector); // Check insurance. Inspect seat belts. Inspect vehicle.
 }

@@ -6,13 +6,14 @@ struct asteroid {};
 struct bullet {};
 struct spaceship {};
 
-declare_method(collide)
-define_method(collide, asteroid&, asteroid&) { cout << "Traverse\n"; }
-define_method(collide, asteroid& a, bullet& b) { collide(b, a); }
-define_method(collide, asteroid&, spaceship&) { cout << "Boom\n"; }
-define_method(collide, bullet&, asteroid&) { cout << "Hit\n"; }
-define_method(collide, spaceship& s, asteroid& a) { collide(a, s); }
-define_method_fallback(collide) {}
+define_method(collide)
+    match(asteroid&, asteroid&) { cout << "Traverse\n"; }
+    match(asteroid& a, bullet& b) { cout << "Hit\n"; }
+    match(asteroid&, spaceship&) { cout << "Boom\n"; }
+    match(bullet& b, asteroid& a) { collide(a, b); }
+    match(spaceship& s, asteroid& a) { collide(a, s); }
+    fallback {}
+end_method
 
 int main() {
    asteroid a;
