@@ -252,7 +252,7 @@ struct check_base_class_impl<B, R(*)(Args...)> {
 
 /**********************************************************************************************/
 template<class B, class F>
-struct check_base_class : public check_base_class_impl<B, add_pointer_t<F>> {
+struct check_base_class : public check_base_class_impl<B, F> {
 };
 
 
@@ -676,84 +676,98 @@ struct method_6_void final : abstract_method<T, B> {
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 0 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_0<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 0 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_0_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 1 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_1<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 1 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_1_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 2 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_2<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 2 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_2_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 3 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_3<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 3 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_3_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 4 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_4<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 4 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_4_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 5 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_5<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 5 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_5_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 6 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_6<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
 auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 6 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class.");
     return new method_6_void<T, B, F>(f);
 }
 
