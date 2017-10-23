@@ -222,6 +222,7 @@ struct abstract_method {
     virtual ret_t call(arg<B>, arg<B>, arg<B>) { return {}; }
     virtual ret_t call(arg<B>, arg<B>, arg<B>, arg<B>) { return {}; }
     virtual ret_t call(arg<B>, arg<B>, arg<B>, arg<B>, arg<B>) { return {}; }
+    virtual ret_t call(arg<B>, arg<B>, arg<B>, arg<B>, arg<B>, arg<B>) { return {}; }
     virtual bool is_fallback() const { return false; }
 };
 
@@ -263,6 +264,7 @@ template<class T1, class T2, class T3> constexpr int compare_const() { return 0;
 template<class T1, class T2, class T3, class T4, class T5> constexpr int compare_const() { return 0; }
 template<class T1, class T2, class T3, class T4, class T5, class T6, class T7> constexpr int compare_const() { return 0; }
 template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9> constexpr int compare_const() { return 0; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11> constexpr int compare_const() { return 0; }
 
 /**********************************************************************************************/
 template<class T, class U>
@@ -309,6 +311,14 @@ constexpr int compare_const() {
     return compare_const<T2, T3, T4, T5, U2, U3, U4, U5>();
 }
 
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class T5, class T6, class U1, class U2, class U3, class U4, class U5, class U6>
+constexpr int compare_const() {
+    if(constexpr int r = compare_const<T1, U1>() )
+        return r;
+    return compare_const<T2, T3, T4, T5, T6, U2, U3, U4, U5, U6>();
+}
+
 
 /**********************************************************************************************/
 template<class... Args> constexpr enable_if_t<sizeof...(Args) == 0, int> compare_types() { return 0; }
@@ -317,6 +327,7 @@ template<class T1, class T2, class T3> constexpr int compare_types() { return 0;
 template<class T1, class T2, class T3, class T4, class T5> constexpr int compare_types() { return 0; }
 template<class T1, class T2, class T3, class T4, class T5, class T6, class T7> constexpr int compare_types() { return 0; }
 template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9> constexpr int compare_types() { return 0; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11> constexpr int compare_types() { return 0; }
 
 /**********************************************************************************************/
 template<class T, class U>
@@ -360,6 +371,14 @@ constexpr int compare_types() {
     if(constexpr int r = compare_types<T1, U1>() )
         return r;
     return compare_types<T2, T3, T4, T5, U2, U3, U4, U5>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class T5, class T6, class U1, class U2, class U3, class U4, class U5, class U6>
+constexpr int compare_types() {
+    if(constexpr int r = compare_types<T1, U1>() )
+        return r;
+    return compare_types<T2, T3, T4, T5, T6, U2, U3, U4, U5, U6>();
 }
 
 /**********************************************************************************************/
@@ -448,7 +467,7 @@ struct function_traits_impl<R(*)(T1, T2, T3, T4, T5)> {
 
 template<class R, class T1, class T2, class T3, class T4, class T5, class T6>
 struct function_traits_impl<R(*)(T1, T2, T3, T4, T5, T6)> {
-    enum { arity = 5 };
+    enum { arity = 6 };
     using ret_type = R;
     using arg1_type = T1;
     using arg2_type = T2;
