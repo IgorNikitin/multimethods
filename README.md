@@ -8,7 +8,7 @@ Multimethods for C++17
 * можливість отримати результат від функції;
 * бібліотека сортує реалізації, використувачи спадкування та константність, спочатку обираються успадковані класи, якщо ж типи співпадають для всіх параметрів, то реалізація без const (типи перевіряються зліва-направо як для спадкування, так і для наявності const в них) має вищій пріоритет, наприклад:
 ```C++
-        define_method(collide, void, thing)
+    define_method(collide, void, thing)
         match(const thing&, spaceship&) { cout << "base const\n"; }
         match(thing&, spaceship&) { cout << "base\n"; }
         match(const asteroid&, spaceship&) { cout << "derived const\n"; next_method; }
