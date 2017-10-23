@@ -63,7 +63,7 @@ end_method(print1)
 define_method1(print2, void, base2)
     match(base2&) { cout << "base2\n"; }
     match(derived2&) { cout << "derived2\n"; }
-end_method(print1)
+end_method(print2)
 
 int main() {
     base1 b1;
@@ -71,7 +71,7 @@ int main() {
     derived1 d1;
     derived2 d2;
 
-    print1(); // base1
+    print1(b1); // base1
     print1(d1); // derived1
 
     print2(b2); // base2
