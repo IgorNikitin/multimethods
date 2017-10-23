@@ -2,38 +2,35 @@
 #include <multimethods.h>
 using namespace std;
 
-struct thing : multimethods::unknown {};
-struct asteroid : thing {};
-struct bullet : thing {};
-struct spaceship : thing {};
+struct vehicle : multimethods::unknown {};
+struct car : vehicle {};
+struct inspector : multimethods::unknown {};
+struct state_inspector : inspector {};
 
-define_method(collide)
-    match(asteroid&, asteroid&) { cout << "traverse\n"; }
-    match(asteroid&, bullet&) { cout << "hit\n"; }
-    match(asteroid&, spaceship&) { cout << "boom\n"; }
-    match(thing& t, asteroid& a) { collide(a, t); }
-    fallback {}
+define_method(inspect)
+    match(vehicle&, inspector&) { cout << "Inspect vehicle.\n"; }
+    match(car&, inspector&) { cout << "Inspect seat belts.\n"; next_method; }
+    match(car&, state_inspector&) { cout << "Check insurance.\n"; next_method; }
 end_method
+
 
 define_method(join, string)
     match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
     match(string s1, string s2) { return s1 + s2; }
-    match() { return {}; }
     fallback { return "fallback"; }
 end_method
 
+
 int main() {
-    collide(asteroid(), spaceship()); // boom
-    collide(bullet(), asteroid()); // hit
+    inspect(car(), state_inspector());  // Check insurance. Inspect seat belts. Inspect vehicle.
 
     try {
-        collide(asteroid(), true);
+        inspect(car(), true);
     } catch(multimethods::not_implemented& e) {
-        cout << e.what() << endl; // collide: not_implemented
+        cout << e.what() << endl; // inspect: not_implemented
     }
 
     cout << join(1, 2, 3) << endl; // 123
     cout << join("Hello,"s, " world."s) << endl; // Hello, world.
-    cout << join() << endl; //
     cout << join(false) << endl; // fallback
 }

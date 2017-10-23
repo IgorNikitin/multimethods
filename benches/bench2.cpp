@@ -21,7 +21,7 @@ int main() {
    clock_t begin = clock();
 
    for(int i = 0; i < 1000000; ++i)
-       collide(static_cast<base&>(s1), static_cast<base&>(s2));
+       collide(s1, s2);
 
     const double ms = double(clock() - begin) / CLOCKS_PER_SEC;
     printf("%f\n", ms);

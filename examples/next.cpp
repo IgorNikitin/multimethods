@@ -15,8 +15,5 @@ define_method(inspect)
 end_method
 
 int main() {
-  car car;
-  state_inspector inspector;
-
-  inspect(car, inspector); // Check insurance. Inspect seat belts. Inspect vehicle.
+    inspect(car(), state_inspector()); // Check insurance. Inspect seat belts. Inspect vehicle.
 }
