@@ -19,32 +19,35 @@
 // Defines a new multimethod and optionally specifies it's result type and base class
 // for polymorphic types.
 //
-//   declare_method(collide)
-//   declare_method(concat, string)
-//   declare_method(concat, string, I_Unknown)
+//   define_method(collide)
+//       match(asteroid&, asteroid&) {}
+//       match(asteroid&, spaceship&) {}
+//   end_method
 //
 #define define_method(name, ...) \
     namespace mm_namespace_ ## name { \
-        using mm_base_t     = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::base; \
-        using mm_ret_type_t = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::type; \
-        using mm_method_t   = ::multimethods::detail::abstract_method<mm_ret_type_t, mm_base_t>; \
+        using namespace ::multimethods::detail; \
         \
-        static inline std::vector<mm_method_t*> g_funcs; \
-        static inline mm_method_t* g_fallback { nullptr }; \
+        using base_t     = multimethod_parameters<__VA_ARGS__>::base; \
+        using ret_type_t = multimethod_parameters<__VA_ARGS__>::type; \
+        using method_t   = abstract_method<ret_type_t, base_t>; \
+        \
+        static inline method_t* g_fallback { nullptr }; \
+        static inline std::vector<method_t*> g_funcs; \
     }; \
     \
     template<class... Args> inline \
-    mm_namespace_ ## name::mm_ret_type_t name(Args&&... args) { \
+    mm_namespace_ ## name::ret_type_t name(Args&&... args) { \
         for( auto m : mm_namespace_ ## name ::g_funcs ) \
             try { \
                 if(auto r = m->call(args...)) \
-                    return ::multimethods::detail::method_result<mm_namespace_ ## name::mm_ret_type_t>::unwrap(r); \
+                    return ::multimethods::detail::method_result<mm_namespace_ ## name::ret_type_t>::unwrap(r); \
             } catch(::multimethods::try_next&) { \
             } \
         if(mm_namespace_ ## name ::g_fallback) { \
             ::multimethods::detail::fallback_t fb; \
             if(auto r = mm_namespace_ ## name ::g_fallback->call(fb)) \
-                return ::multimethods::detail::method_result<mm_namespace_ ## name::mm_ret_type_t>::unwrap(r); \
+                return ::multimethods::detail::method_result<mm_namespace_ ## name::ret_type_t>::unwrap(r); \
         } \
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
@@ -53,17 +56,25 @@
         const bool g_init = [] { const std::tuple funcs { true
 
 /**********************************************************************************************/
-// Adds implementation of a multimethod.
+// Adds implementation of a method.
 //
-//   declare_method(collide)
-//   define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
+//   match(asteroid&, asteroid&) { cout << "Traverse.\n"; }
+//   match(asteroid&, spaceship&) { cout << "Boom!\n"; }
 //
-#define match(...) , +[](__VA_ARGS__) -> mm_ret_type_t
+#define match(...) , +[](__VA_ARGS__) -> ret_type_t
 
+/**********************************************************************************************/
+// Finishes definition of a multimethod.
+//
+//   define_method(collide)
+//       match(asteroid&, asteroid&) {}
+//       match(asteroid&, spaceship&) {}
+//   end_method
+//
 #define end_method \
             }; \
             ::multimethods::detail::sort_functions sorter(funcs); \
-            g_funcs = sorter.sort<mm_ret_type_t, mm_base_t>(); \
+            g_funcs = sorter.sort_methods<ret_type_t, base_t>(); \
             for(auto it = g_funcs.begin() ; it != g_funcs.end() ; ++it) \
                 if((*it)->is_fallback()) { \
                     g_fallback = *it; \
@@ -78,14 +89,14 @@
 // Adds fallback handler for a multimethod.
 //
 //   define_method(collide)
-//   fallback(collide) { cout << "All is fine.\n"; }
+//   fallback { cout << "All is fine.\n"; }
 //
-#define fallback , +[](::multimethods::detail::fallback_t) -> mm_ret_type_t
+#define fallback , +[](::multimethods::detail::fallback_t) -> ret_type_t
 
 /**********************************************************************************************/
-// Skip current method in runtime to search for more suitable implementation.
+// Skips current method in runtime to search for more suitable implementation.
 //
-//   define_method(mm_abs, int n) { if(n > 0) skip_method; return -n; }
+//   match(int n) { if(n > 0) next_method; return -n; }
 //
 #define next_method throw ::multimethods::try_next();
 
@@ -103,12 +114,14 @@ struct not_implemented final : std::exception {
     virtual const char* what() const noexcept { return name_.c_str(); }
 };
 
+
 /**********************************************************************************************/
 // Exception to skip a method and try next one.
 //
 struct try_next final : std::exception {
     virtual const char* what() const noexcept { return "next_method"; }
 };
+
 
 /**********************************************************************************************/
 // Base class to use with user's classes to dispatch over base classes.
@@ -157,7 +170,7 @@ struct arg final {
 
     // Constructs from polymorphic value - we can try to cast it to the base class,
     // and cast to a destination class later.
-    template<class T, class = typename std::enable_if<std::is_polymorphic<typename std::decay<T>::type>::value && std::is_base_of<B, T>::value>::type, class = void>
+    template<class T, class = enable_if_t<is_polymorphic_v<decay_t<T>> && is_base_of_v<B, T>>, class = void>
     arg<B>(T& v)
     : base_(const_cast<B*>(static_cast<const B*>(&v)))
     , const_(is_const_v<remove_reference_t<T>>)
@@ -165,7 +178,7 @@ struct arg final {
     }
 
     // Constructs from non-polymorphic value.
-    template<class T, class = typename std::enable_if<!std::is_polymorphic_v<std::decay_t<T>>>::type, class = void, class = void>
+    template<class T, class = enable_if_t<!is_polymorphic_v<decay_t<T>>>, class = void, class = void>
     arg<B>(T& v)
     : base_(nullptr)
     , const_(is_const_v<remove_reference_t<T>>)
@@ -175,22 +188,22 @@ struct arg final {
 
     // Cast to a polymorphic type
     template<class T>
-    auto cast() -> typename std::enable_if<std::is_polymorphic<std::decay_t<T>>::value, std::remove_reference_t<T>*>::type {
+    auto cast() -> enable_if_t<is_polymorphic_v<decay_t<T>>, remove_reference_t<T>*> {
         if(is_const_v<remove_reference_t<T>> || !const_ ) {
-            if(auto p = dynamic_cast<typename std::decay<T>::type*>(base_))
+            if(auto p = dynamic_cast<decay_t<T>*>(base_))
                 return p;
             if(!base_ && type_ == typeid(T))
-                return reinterpret_cast<typename std::remove_reference<T>::type*>(p_);
+                return reinterpret_cast<remove_reference_t<T>*>(p_);
         }
         return nullptr;
     }
 
     // Cast to a non-polymorphic type
     template<class T>
-    auto cast() -> typename std::enable_if_t<!std::is_polymorphic_v<std::decay_t<T>>, std::remove_reference_t<T>*> {
+    auto cast() -> enable_if_t<!is_polymorphic_v<decay_t<T>>, remove_reference_t<T>*> {
         if(std::is_const_v<std::remove_reference_t<T>> || !const_ ) {
             if(!base_ && type_ == typeid(T))
-                return reinterpret_cast<std::remove_reference_t<T>*>(p_);
+                return reinterpret_cast<remove_reference_t<T>*>(p_);
         }
         return nullptr;
     }
@@ -201,7 +214,7 @@ struct arg final {
 //
 template<class T, class B>
 struct abstract_method {
-    using ret_t = typename std::conditional<std::is_same<T, void>::value, bool, std::optional<T>>::type;
+    using ret_t = conditional_t<is_same_v<T, void>, bool, optional<T>>;
     virtual ~abstract_method() {}
     virtual ret_t call() { return {}; }
     virtual ret_t call(arg<B>) { return {}; }
@@ -222,7 +235,7 @@ constexpr bool is_match_to_base() {
 /**********************************************************************************************/
 template<class B, class T, class... Args>
 constexpr bool is_match_to_base() {
-    if(std::is_polymorphic<typename std::decay<T>::type>::value && !std::is_base_of<B, typename std::decay<T>::type>::value)
+    if(is_polymorphic_v<decay_t<T>> && !is_base_of_v<B, decay_t<T>>)
         return false;
     return is_match_to_base<B, Args...>();
 }
@@ -239,9 +252,8 @@ struct check_base_class_impl<B, R(*)(Args...)> {
 
 /**********************************************************************************************/
 template<class B, class F>
-struct check_base_class : public check_base_class_impl<B, typename std::add_pointer<F>::type> {
+struct check_base_class : public check_base_class_impl<B, add_pointer_t<F>> {
 };
-
 
 
 /**********************************************************************************************/
@@ -309,11 +321,11 @@ template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, c
 /**********************************************************************************************/
 template<class T, class U>
 constexpr int compare_types() {
-    if(std::is_same<typename std::decay<T>::type, typename std::decay<U>::type>::value)
+    if(is_same_v<decay_t<T>, decay_t<U>>)
         return 0;
-    if(std::is_base_of<typename std::decay<T>::type, typename std::decay<U>::type>::value)
+    if(is_base_of_v<decay_t<T>, decay_t<U>>)
         return 1;
-    if(std::is_base_of<typename std::decay<U>::type, typename std::decay<T>::type>::value)
+    if(is_base_of_v<decay_t<U>, decay_t<T>>)
         return -1;
     return 0;
 }
@@ -432,6 +444,18 @@ struct function_traits_impl<R(*)(T1, T2, T3, T4, T5)> {
     using arg3_type = T3;
     using arg4_type = T4;
     using arg5_type = T5;
+};
+
+template<class R, class T1, class T2, class T3, class T4, class T5, class T6>
+struct function_traits_impl<R(*)(T1, T2, T3, T4, T5, T6)> {
+    enum { arity = 5 };
+    using ret_type = R;
+    using arg1_type = T1;
+    using arg2_type = T2;
+    using arg3_type = T3;
+    using arg4_type = T4;
+    using arg5_type = T5;
+    using arg6_type = T6;
 };
 
 /**********************************************************************************************/
@@ -601,13 +625,49 @@ struct method_5_void final : abstract_method<T, B> {
     F f_;
     method_5_void(F f) : f_(f) {}
 
-    bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4) {
+    bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5) {
         if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
             if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
                 if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
                     if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
-                        if(auto u5 = p4.template cast<typename function_traits<F>::arg5_type>())
+                        if(auto u5 = p5.template cast<typename function_traits<F>::arg5_type>())
                             { f_(*u1, *u2, *u3, *u4, *u5); return true; }
+        return false;
+    }
+};
+
+/**********************************************************************************************/
+template<class T, class B, class F>
+struct method_6 final : abstract_method<T, B> {
+    F f_;
+    method_6(F f) : f_(f) {}
+
+    typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5, arg<B> p6) {
+        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
+            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
+                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
+                    if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
+                        if(auto u5 = p5.template cast<typename function_traits<F>::arg5_type>())
+                            if(auto u6 = p6.template cast<typename function_traits<F>::arg6_type>())
+                                return f_(*u1, *u2, *u3, *u4, *u5, *u6);
+        return {};
+    }
+};
+
+/**********************************************************************************************/
+template<class T, class B, class F>
+struct method_6_void final : abstract_method<T, B> {
+    F f_;
+    method_6_void(F f) : f_(f) {}
+
+    bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5, arg<B> p6) {
+        if(auto u1 = p1.template cast<typename function_traits<F>::arg1_type>())
+            if(auto u2 = p2.template cast<typename function_traits<F>::arg2_type>())
+                if(auto u3 = p3.template cast<typename function_traits<F>::arg3_type>())
+                    if(auto u4 = p4.template cast<typename function_traits<F>::arg4_type>())
+                        if(auto u5 = p5.template cast<typename function_traits<F>::arg5_type>())
+                            if(auto u6 = p6.template cast<typename function_traits<F>::arg6_type>())
+                                { f_(*u1, *u2, *u3, *u4, *u5, *u6); return true; }
         return false;
     }
 };
@@ -615,80 +675,93 @@ struct method_5_void final : abstract_method<T, B> {
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 0 && !std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 0 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_0<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 0 && std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 0 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_0_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 1 && !std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 1 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_1<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 1 && std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 1 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_1_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 2 && !std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 2 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_2<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 2 && std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 2 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_2_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 3 && !std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 3 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_3<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 3 && std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 3 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_3_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 4 && !std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 4 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_4<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 4 && std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 4 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_4_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 5 && !std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 5 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_5<T, B, F>(f);
 }
 
 /**********************************************************************************************/
 template<class T, class B, class F> inline
-auto make_method(F f) -> typename std::enable_if<function_traits<F>::arity == 5 && std::is_same<void, typename function_traits<F>::ret_type>::value, abstract_method<T, B>*>::type {
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 5 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
     return new method_5_void<T, B, F>(f);
 }
 
 /**********************************************************************************************/
+template<class T, class B, class F> inline
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 6 && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    return new method_6<T, B, F>(f);
+}
+
+/**********************************************************************************************/
+template<class T, class B, class F> inline
+auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == 6 && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> {
+    return new method_6_void<T, B, F>(f);
+}
+
+
+/**********************************************************************************************/
 template<class T>
 struct method_result_impl {
-    static T& unwrap(std::optional<T>& o) {return *o;}
+    static T& unwrap(std::optional<T>& o) { return *o; }
 };
 
 /**********************************************************************************************/
@@ -710,69 +783,49 @@ struct multimethod_parameters {
     using base = U;
 };
 
-template<std::size_t N, class T, class... types>
-struct get_Nth_type {
-    using type = typename get_Nth_type<N - 1, types...>::type;
+
+/**********************************************************************************************/
+template<std::size_t N, class T, class... Args>
+struct get_type_by_index {
+    using type = typename get_type_by_index<N - 1, Args...>::type;
 };
 
-template<class T, class... types>
-struct get_Nth_type<0, T, types...> {
+/**********************************************************************************************/
+template<class T, class... Args>
+struct get_type_by_index<0, T, Args...> {
     using type = T;
 };
+
 
 /**********************************************************************************************/
 template<class... Funcs>
 struct sort_functions {
-    sort_functions( const std::tuple<bool, Funcs...>& funcs ) : funcs_(funcs) {}
-
     const std::tuple<bool, Funcs...>& funcs_;
+    sort_functions( const std::tuple<bool, Funcs...>& funcs ) : funcs_(funcs) {}
 
     static constexpr int N = sizeof...(Funcs);
 
     template<std::size_t N>
-    using getF = typename get_Nth_type<N, Funcs...>::type;
+    using func_type_t = typename get_type_by_index<N, Funcs...>::type;
 
-#define MM_FUNC_TYPE(I) \
-    using F ## I = getF<(I<N?I:0)>
+    #define MM_FUNC_TYPE(I) \
+        using F ## I = func_type_t<(I < N ? I : 0)>
 
-    MM_FUNC_TYPE(0);
-    MM_FUNC_TYPE(1);
-    MM_FUNC_TYPE(2);
-    MM_FUNC_TYPE(3);
-    MM_FUNC_TYPE(4);
-    MM_FUNC_TYPE(5);
-    MM_FUNC_TYPE(6);
-    MM_FUNC_TYPE(7);
-    MM_FUNC_TYPE(8);
-    MM_FUNC_TYPE(9);
-    MM_FUNC_TYPE(10);
-    MM_FUNC_TYPE(11);
-    MM_FUNC_TYPE(12);
-    MM_FUNC_TYPE(13);
-    MM_FUNC_TYPE(14);
-    MM_FUNC_TYPE(15);
-    MM_FUNC_TYPE(16);
-    MM_FUNC_TYPE(17);
-    MM_FUNC_TYPE(18);
-    MM_FUNC_TYPE(19);
-    MM_FUNC_TYPE(20);
-    MM_FUNC_TYPE(21);
-    MM_FUNC_TYPE(22);
-    MM_FUNC_TYPE(23);
-    MM_FUNC_TYPE(24);
-    MM_FUNC_TYPE(25);
-    MM_FUNC_TYPE(26);
-    MM_FUNC_TYPE(27);
-    MM_FUNC_TYPE(28);
-    MM_FUNC_TYPE(29);
-    MM_FUNC_TYPE(30);
-    MM_FUNC_TYPE(31);
+    MM_FUNC_TYPE(0); MM_FUNC_TYPE(1); MM_FUNC_TYPE(2); MM_FUNC_TYPE(3);
+    MM_FUNC_TYPE(4); MM_FUNC_TYPE(5); MM_FUNC_TYPE(6); MM_FUNC_TYPE(7);
+    MM_FUNC_TYPE(8); MM_FUNC_TYPE(9); MM_FUNC_TYPE(10); MM_FUNC_TYPE(11);
+    MM_FUNC_TYPE(12); MM_FUNC_TYPE(13); MM_FUNC_TYPE(14); MM_FUNC_TYPE(15);
+    MM_FUNC_TYPE(16); MM_FUNC_TYPE(17); MM_FUNC_TYPE(18); MM_FUNC_TYPE(19);
+    MM_FUNC_TYPE(20); MM_FUNC_TYPE(21); MM_FUNC_TYPE(22); MM_FUNC_TYPE(23);
+    MM_FUNC_TYPE(24); MM_FUNC_TYPE(25); MM_FUNC_TYPE(26); MM_FUNC_TYPE(27);
+    MM_FUNC_TYPE(28); MM_FUNC_TYPE(29); MM_FUNC_TYPE(30); MM_FUNC_TYPE(31);
     MM_FUNC_TYPE(32);
 
-#undef MM_FUNC_TYPE
+    #undef MM_FUNC_TYPE
 
+    // Predicate function to sort methods
     template<class A>
-    static constexpr bool pred(int b) {
+    static constexpr bool pred_b(int b) {
         #define MM_CASE_B(I) \
             if(b == I) return compare_methods<A, F ## I>::value < 0;
 
@@ -791,14 +844,19 @@ struct sort_functions {
         return false;
     }
 
+    // Sorts methods and return vector with instances of 'abstract_method'
     template<class TR, class BR>
-    auto sort() {
+    auto sort_methods() {
+        // Use indexes cause we cannot sort tuple itself
         int indexes[N];
-        for( int i = 0 ; i < N ; ++i )
+        for(int i = 0 ; i < N ; ++i)
             indexes[i] = i;
 
+        // Use quick-sort to sort methods by types and it's constness
         std::sort(indexes, indexes + N, [](int a, int b) {
-            #define MM_CASE_A(I) if(a == I) return sort_functions::pred<F ## I>(b)
+            #define MM_CASE_A(I) \
+                if(a == I) return sort_functions::pred_b<F ## I>(b)
+
             MM_CASE_A(0); MM_CASE_A(1); MM_CASE_A(2); MM_CASE_A(3);
             MM_CASE_A(4); MM_CASE_A(5); MM_CASE_A(6); MM_CASE_A(7);
             MM_CASE_A(8); MM_CASE_A(9); MM_CASE_A(10); MM_CASE_A(11);
@@ -808,16 +866,20 @@ struct sort_functions {
             MM_CASE_A(24); MM_CASE_A(25); MM_CASE_A(26); MM_CASE_A(27);
             MM_CASE_A(28); MM_CASE_A(29); MM_CASE_A(30); MM_CASE_A(31);
             MM_CASE_A(32);
+
             #undef MM_CASE_A
 
             return a<b;
         } );
 
+        // Create and fill vector with methods
         std::vector<abstract_method<TR, BR>*> r(N);
-        for( int i = 0 ; i < N ; ++i )
-        {
+
+        for(int i = 0 ; i < N ; ++i) {
             switch(indexes[i]) {
-                #define MM_MAKE_METHOD(I) case I: r[i] = make_method<TR, BR, F ## I>(std::get<I < N ? I + 1 : 1>(funcs_)); break
+                #define MM_MAKE_METHOD(I) \
+                    case I: r[i] = make_method<TR, BR, F ## I>(std::get<I < N ? I + 1 : 1>(funcs_)); break
+
                 MM_MAKE_METHOD(0); MM_MAKE_METHOD(1); MM_MAKE_METHOD(2); MM_MAKE_METHOD(3);
                 MM_MAKE_METHOD(4); MM_MAKE_METHOD(5); MM_MAKE_METHOD(6); MM_MAKE_METHOD(7);
                 MM_MAKE_METHOD(8); MM_MAKE_METHOD(9); MM_MAKE_METHOD(10); MM_MAKE_METHOD(11);
@@ -827,6 +889,7 @@ struct sort_functions {
                 MM_MAKE_METHOD(24); MM_MAKE_METHOD(25); MM_MAKE_METHOD(26); MM_MAKE_METHOD(27);
                 MM_MAKE_METHOD(28); MM_MAKE_METHOD(29); MM_MAKE_METHOD(30); MM_MAKE_METHOD(31);
                 MM_MAKE_METHOD(32);
+
                 #undef MM_MAKE_METHOD
 
                 default:;
