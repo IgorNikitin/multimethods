@@ -13,13 +13,11 @@ define_method(inspect)
     match(car&, state_inspector&) { cout << "Check insurance.\n"; next_method; }
 end_method
 
-
 define_method(join, string)
     match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
     match(string s1, string s2) { return s1 + s2; }
     fallback { return "fallback"; }
 end_method
-
 
 int main() {
     inspect(car(), state_inspector());  // Check insurance. Inspect seat belts. Inspect vehicle.
