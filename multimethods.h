@@ -58,7 +58,8 @@
 
 #define end_method \
             }; \
-            g_funcs = ::multimethods::detail::sort_functions(funcs).sort<mm_ret_type_t, mm_base_t>(); \
+            ::multimethods::detail::sort_functions sorter(funcs); \
+            g_funcs = sorter.sort<mm_ret_type_t, mm_base_t>(); \
             return true; \
         }(); \
     }
