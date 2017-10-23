@@ -54,9 +54,9 @@ Multimethods for C++17
 * для максимальної швидкодії краще обрати інший інструмент, ця бібліотека використовує dynamic_cast для пошуку відповідної реалізації, хоча у більшості випадків її швидкодії буде цілком достатньо.
 * чим більше реалізацій у одного з методів, тим більше часу може знадобиться для його виклику. Наприклад, для такого коду:
 ```C++
-    struct base : multimethods::unknown {};
-    struct asteroid : base {};
-    struct spaceship : base {};
+    struct thing : multimethods::unknown {};
+    struct asteroid : thing {};
+    struct spaceship : thing {};
 
     define_method(collide)
         match(asteroid&, asteroid&) {}
@@ -67,7 +67,7 @@ Multimethods for C++17
     ...
     spaceship s1, s2;
     for(int i = 0; i < 1000000; ++i)
-       collide(static_cast<base&>(s1), static_cast<base&>(s2));
+       collide(static_cast<thing&>(s1), static_cast<thing&>(s2));
 ```
 де використовується поліморфізм, час виконання на 2600K 3.4GHz складає близько 0.17сек (170нс на виклик). Без поліморфізму час складає 0.012сек (12нс на виклик). Ці числа не є фіксованими і можуть бути змінені з часом через оптимізації, або, навпаки, через додавання нової функціональності.
 
