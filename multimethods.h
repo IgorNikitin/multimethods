@@ -24,28 +24,29 @@
 //   declare_method(concat, string, I_Unknown)
 //
 #define define_method(name, ...) \
-    using g_mm_b_ ## name = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::base; \
-    using g_mm_r_ ## name = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::type; \
-    \
-    struct g_mm_f_ ## name { \
-        static inline std::vector<::multimethods::detail::abstract_method<g_mm_r_ ## name, g_mm_b_ ## name>*> funcs_; \
-        static inline g_mm_r_ ## name(*fallback_)() { nullptr }; \
+    namespace mm_namespace_ ## name { \
+        using mm_base_t     = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::base; \
+        using mm_ret_type_t = ::multimethods::detail::multimethod_parameters<__VA_ARGS__>::type; \
+        \
+        static inline std::vector<::multimethods::detail::abstract_method<mm_ret_type_t, mm_base_t>*> g_funcs; \
+        static inline mm_ret_type_t(*fallback_)() { nullptr }; \
     }; \
     \
     template<class... Args> inline \
-    g_mm_r_ ## name name(Args&&... args) { \
-        for( auto m : g_mm_f_ ## name ::funcs_ ) \
+    mm_namespace_ ## name::mm_ret_type_t name(Args&&... args) { \
+        for( auto m : mm_namespace_ ## name ::g_funcs ) \
             try { \
                 if(auto r = m->call(args...)) \
-                    return ::multimethods::detail::method_result<g_mm_r_ ## name>::unwrap(r); \
+                    return ::multimethods::detail::method_result<mm_namespace_ ## name::mm_ret_type_t>::unwrap(r); \
             } catch(::multimethods::not_match&) { \
             } \
-        return g_mm_f_ ## name ::fallback_ \
-            ? (*g_mm_f_ ## name ::fallback_)() \
+        return mm_namespace_ ## name ::fallback_ \
+            ? (*mm_namespace_ ## name ::fallback_)() \
             : throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
-    static bool MM_JOIN(_mm_init_, __LINE__) = []{ const std::tuple funcs { true
+    namespace mm_namespace_ ## name { \
+        const bool g_init = [] { const std::tuple funcs { true
 
 /**********************************************************************************************/
 // Adds implementation of a multimethod.
@@ -53,12 +54,14 @@
 //   declare_method(collide)
 //   define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
 //
-#define match ,+[]
+#define match , +[]
 
-#define end_method(name) \
-    }; \
-    g_mm_f_ ## name::funcs_ = ::multimethods::detail::sort_functions(funcs).sort<g_mm_r_ ## name, g_mm_b_ ## name>(); \
-    return true; }();
+#define end_method \
+            }; \
+            g_funcs = ::multimethods::detail::sort_functions(funcs).sort<mm_ret_type_t, mm_base_t>(); \
+            return true; \
+        }(); \
+    }
 
 /**********************************************************************************************/
 // Adds fallback handler for a multimethod.
@@ -66,10 +69,7 @@
 //   declare_method(collide)
 //   define_method_fallback(collide) { cout << "All is fine.\n"; }
 //
-#define define_method_fallback(name) \
-   static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)(); \
-   static bool MM_JOIN(_mm_init_, __LINE__) = []{ g_mm_f_ ## name ::fallback_ = MM_JOIN(_mm_impl_, __LINE__); return true; }(); \
-   static g_mm_r_ ## name MM_JOIN(_mm_impl_, __LINE__)()
+#define fallback , +[]()
 
 /**********************************************************************************************/
 // Skip current method in runtime to search for more suitable implementation.
@@ -631,8 +631,8 @@ struct method_result : public method_result_impl<T> {
 /**********************************************************************************************/
 template<class T=void, class U=::multimethods::unknown>
 struct multimethod_parameters {
-    using type=T;
-    using base=U;
+    using type = T;
+    using base = U;
 };
 
 template<std::size_t N, class T, class... types>

@@ -6,19 +6,24 @@ struct asteroid {};
 struct spaceship : multimethods::unknown {};
 struct spaceship_big : spaceship {};
 
-declare_method(collide)
-define_method(collide, asteroid&, spaceship_big&) { cout << "Big boom!\n"; }
-define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
-define_method(collide, spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }
+define_method(collide)
+    match(asteroid&, spaceship&) { cout << "Boom!\n"; }
+    match(asteroid&, spaceship_big&) { cout << "Big boom!\n"; }
+    match(spaceship&, const spaceship& s) { cout << "Knock, knock.\n"; }
+end_method
 
-declare_method(join, string)
-define_method(join, int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
-define_method(join, string s1, string s2) { return s1 + s2; }
-define_method_fallback(join) { return "Fallback."; }
+define_method(join, string)
+    match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
+    match(string s1, string s2) { return s1 + s2; }
+    fallback { return "Fallback."; }
+end_method
 
-declare_method(mm_abs, int)
-define_method(mm_abs, int n) { if(n > 0) skip_method; return -n; }
-define_method(mm_abs, int n) { return n; }
+define_method(mm_abs, int)
+    match(int n) { if(n > 0) skip_method; return -n; }
+    match(int n) { return n; }
+end_method
+
+// TODO: const example - match to const or not const, sort by const
 
 int main() {
    asteroid a;

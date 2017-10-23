@@ -11,12 +11,13 @@ struct derived2 : base2 {};
 define_method(print1)
     match(base1&) { cout << "base1\n"; }
     match(derived1&) { cout << "derived1\n"; }
-end_method(print1)
+end_method
 
 define_method(print2, void, base2)
     match(base2&) { cout << "base2\n"; }
     match(derived2&) { cout << "derived2\n"; }
-end_method(print2)
+end_method
+
 
 int main() {
     base1 b1;
