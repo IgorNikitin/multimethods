@@ -23,12 +23,12 @@ Multimethods for C++17
 ``` 
 виведе на екран:
 ```
-derived
-derived const
-base
--------------
-derived const
-base const
+    derived
+    derived const
+    base
+    -------------
+    derived const
+    base const
 ```
 * можливість обирати методи, використовуючи передані аргументи, наприклад:
 ```C++
