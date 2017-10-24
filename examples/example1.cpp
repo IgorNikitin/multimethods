@@ -10,7 +10,7 @@ struct state_inspector : inspector {};
 void multi_method(inspect, const vehicle&, const inspector&)
     match(const car&, const inspector&) { cout << "Inspect seat belts.\n"; next_method; }
     match(const car&, const state_inspector&) { cout << "Check insurance.\n"; next_method; }
-    fallback { cout << "Inspect vehicle.\n"; }
+    match(const vehicle&, const inspector&) { cout << "Inspect vehicle.\n"; }
 end_method
 
 string multi_method(join, any, any)
