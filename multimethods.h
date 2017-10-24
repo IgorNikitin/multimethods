@@ -29,33 +29,36 @@
     namespace mm_namespace_ ## name { \
         using namespace ::multimethods::detail; \
         \
-        using proto_t    = decltype(&mm_proto_ret_ ## name); \
-        using base1_t    = typename get_base_type<proto_t, 0>::type; \
-        using base2_t    = typename get_base_type<proto_t, 1>::type; \
-        using base3_t    = typename get_base_type<proto_t, 2>::type; \
-        using base4_t    = typename get_base_type<proto_t, 3>::type; \
-        using base5_t    = typename get_base_type<proto_t, 4>::type; \
-        using base6_t    = typename get_base_type<proto_t, 5>::type; \
-        using ret_type_t = typename function_traits<proto_t>::ret_type; \
-        using method_t   = abstract_method<ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>; \
+        using proto_t        = decltype(&mm_proto_ret_ ## name); \
+        using proto_traits_t = function_traits<proto_t>; \
+        using base1_t        = decay_t<proto_traits_t::arg1_type>; \
+        using base2_t        = decay_t<proto_traits_t::arg2_type>; \
+        using base3_t        = decay_t<proto_traits_t::arg3_type>; \
+        using base4_t        = decay_t<proto_traits_t::arg4_type>; \
+        using base5_t        = decay_t<proto_traits_t::arg5_type>; \
+        using base6_t        = decay_t<proto_traits_t::arg6_type>; \
+        using ret_type_t     = proto_traits_t::ret_type; \
+        using method_t       = abstract_method<ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>; \
         \
         static inline method_t* g_fallback { nullptr }; \
-        static inline std::vector<method_t*> g_funcs; \
+        static inline std::vector<method_t*> g_impls; \
     }; \
     \
     template<class... Args> inline \
-    enable_if_t<std::is_invocable_v<decltype(&mm_proto_ret_ ## name), Args...>, mm_namespace_ ## name::ret_type_t> \
+    enable_if_t<std::is_invocable_v<mm_namespace_ ## name::proto_t, Args...>, mm_namespace_ ## name::ret_type_t> \
     name(Args&&... args) { \
-        for( auto m : mm_namespace_ ## name ::g_funcs ) \
+        using namespace ::multimethods::detail; \
+        using namespace mm_namespace_ ## name; \
+        \
+        for( auto m : g_impls ) \
             try { \
                 if(auto r = m->call(args...)) \
-                    return ::multimethods::detail::method_result<mm_namespace_ ## name::ret_type_t>::unwrap(r); \
-            } catch(::multimethods::try_next&) { \
+                    return method_result<ret_type_t>::unwrap(r); \
+            } catch(try_next&) { \
             } \
-        if(mm_namespace_ ## name ::g_fallback) { \
-            ::multimethods::detail::fallback_t fb; \
-            if(auto r = mm_namespace_ ## name ::g_fallback->call(fb)) \
-                return ::multimethods::detail::method_result<mm_namespace_ ## name::ret_type_t>::unwrap(r); \
+        if(g_fallback) { \
+            if(auto r = g_fallback->call(g_dummy_fallback)) \
+                return method_result<ret_type_t>::unwrap(r); \
         } \
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
@@ -82,11 +85,11 @@
 #define end_method \
             }; \
             ::multimethods::detail::sort_functions sorter(funcs); \
-            g_funcs = sorter.sort_methods<proto_t, ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>(); \
-            for(auto it = g_funcs.begin() ; it != g_funcs.end() ; ++it) \
+            g_impls = sorter.sort_methods<proto_t, ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>(); \
+            for(auto it = g_impls.begin() ; it != g_impls.end() ; ++it) \
                 if((*it)->is_fallback()) { \
                     g_fallback = *it; \
-                    g_funcs.erase(it); \
+                    g_impls.erase(it); \
                     break; \
                 } \
             return true; \
@@ -106,7 +109,7 @@
 //
 //   match(int n) { if(n > 0) next_method; return -n; }
 //
-#define next_method throw ::multimethods::try_next();
+#define next_method throw ::multimethods::detail::try_next();
 
 
 /**********************************************************************************************/
@@ -121,15 +124,6 @@ struct not_implemented final : std::exception {
 
     virtual const char* what() const noexcept { return name_.c_str(); }
 };
-
-
-/**********************************************************************************************/
-// Exception to skip a method and try next one.
-//
-struct try_next final : std::exception {
-    virtual const char* what() const noexcept { return "next_method"; }
-};
-
 
 /**********************************************************************************************/
 // Base class to use with user's classes to dispatch over base classes.
@@ -242,6 +236,13 @@ struct arg final : S {
     arg(T& v)
     : S(v) {
     }
+};
+
+/**********************************************************************************************/
+// Exception to skip a method and try next one.
+//
+struct try_next final : std::exception {
+    virtual const char* what() const noexcept { return "next_method"; }
 };
 
 /**********************************************************************************************/
@@ -865,30 +866,6 @@ struct sort_functions {
 
         return r;
     }
-};
-
-
-/**********************************************************************************************/
-template<class F, int N>
-struct get_base_type_impl {
-    using type = conditional_t<N==0,
-        typename function_traits<F>::arg1_type,
-        conditional_t<N==1,
-            typename function_traits<F>::arg2_type,
-            conditional_t<N==2,
-                typename function_traits<F>::arg3_type,
-                conditional_t<N==3,
-                    typename function_traits<F>::arg4_type,
-                    conditional_t<N==4,
-                        typename function_traits<F>::arg5_type,
-                        typename function_traits<F>::arg6_type>>>>>;
-};
-
-/**********************************************************************************************/
-template<class F, int N>
-struct get_base_type {
-    static constexpr int arity = function_traits<F>::arity;
-    using type = conditional_t<(arity>N), decay_t<typename get_base_type_impl<F, (arity>N?N:0)>::type>, unknown>;
 };
 
 
