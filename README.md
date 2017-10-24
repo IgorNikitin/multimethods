@@ -6,18 +6,17 @@ Multimethods for C++17
 * Підтримка неполіморфних типів;
 * бібліотека автоматичо сортує реалізації, використувачи спадкування, тип параметру та константність (типи порівнюються зліва-направо), наприклад:
 ```C++
-    void multi_method(collide, const thing&, const thing&)
-        match(const thing&, spaceship&) { cout << "base const\n"; }
-        match(thing&, spaceship&) { cout << "base\n"; }
-        match(const asteroid&, spaceship&) { cout << "derived const\n"; next_method; }
-        match(asteroid&, spaceship&) { cout << "derived\n"; next_method; }
+    void multi_method(collide, const thing&)
+        match(const thing&) { cout << "base const\n"; }
+        match(thing&) { cout << "base\n"; }
+        match(const asteroid&) { cout << "derived const\n"; next_method; }
+        match(asteroid&) { cout << "derived\n"; next_method; }
     end_method
     ...
     asteroid a;
-    spaceship s;
-    collide(a, s);
+    collide(a);
     cout << "-------------\n";
-    collide((const thing&) a, s);
+    collide((const thing&) a);
 ``` 
 виведе на екран:
 ```
