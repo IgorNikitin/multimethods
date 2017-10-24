@@ -2,18 +2,19 @@
 #include <multimethods.h>
 using namespace std;
 
-struct asteroid {};
-struct spaceship {};
+struct thing { virtual ~thing() {} };
+struct asteroid : thing {};
 
-void multi_method(collide, const asteroid&, const spaceship&)
-    match(asteroid&, const spaceship&) { cout << "Just check.\n"; }
-    match(asteroid&, spaceship&) { cout << "Game over.\n"; }
+void multi_method(collide, const thing&)
+    match(const thing&) { cout << "base const\n"; }
+    match(thing&) { cout << "base\n"; }
+    match(const asteroid&) { cout << "derived const\n"; next_method; }
+    match(asteroid&) { cout << "derived\n"; next_method; }
 end_method
 
 int main() {
     asteroid a;
-    spaceship s;
-
-    collide(a, const_cast<const spaceship&>(s)); // Just check
-    collide(a, s); // Game over
+    collide(a);
+    cout << "-------------\n";
+    collide((const thing&) a);
 }

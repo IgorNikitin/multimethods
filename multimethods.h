@@ -15,7 +15,6 @@
 #include <typeindex>
 #include <vector>
 
-
 /**********************************************************************************************/
 // Defines a new multimethod and specifies it's result type and parameters.
 //
@@ -217,7 +216,7 @@ struct arg_poly {
         if constexpr(is_same_v<T, fallback_t>)
             return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
         else if(is_const_v<remove_reference_t<T>> || !const_ )
-            return dynamic_cast<remove_reference_t<T>*>(base_);
+            return const_cast<remove_reference_t<T>*>(dynamic_cast<const remove_reference_t<T>*>(base_));
         return nullptr;
     }
 };
