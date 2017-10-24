@@ -125,18 +125,6 @@ struct not_implemented final : std::exception {
     virtual const char* what() const noexcept { return name_.c_str(); }
 };
 
-/**********************************************************************************************/
-// Base class to use with user's classes to dispatch over base classes.
-//
-// struct spaceship : multimethods::unknown {};
-// struct spaceship_big : spaceship {};
-// ...
-// define_method(collide, asteroid&, spaceship&) { cout << "Boom!\n"; }
-//
-struct unknown {
-    virtual ~unknown() {}
-};
-
 
 /**********************************************************************************************/
 namespace detail {
