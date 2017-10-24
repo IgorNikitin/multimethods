@@ -112,9 +112,7 @@ int main() {
     rpsls(paper(), scissors());
     rpsls(lizard(), rock());
     rpsls(spock(), spock());
-
     // --------------
-
     overlap(rectangle(), rectangle());
 
     try {
