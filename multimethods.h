@@ -17,10 +17,9 @@
 
 
 /**********************************************************************************************/
-// Defines a new multimethod and optionally specifies it's result type and base class
-// for polymorphic types.
+// Defines a new multimethod and specifies it's result type and parameters.
 //
-//   define_method(collide)
+//   void define_method(collide, thing&, thing&)
 //       match(asteroid&, asteroid&) {}
 //       match(asteroid&, spaceship&) {}
 //   end_method
