@@ -1,17 +1,16 @@
 #include <iostream>
 #include <multimethods.h>
-using namespace multimethods;
 using namespace std;
 
-struct vehicle : unknown {};
+struct vehicle { virtual ~vehicle() {} };
 struct car : vehicle {};
-struct inspector : unknown {};
+struct inspector { virtual ~inspector() {} };
 struct state_inspector : inspector {};
 
-void multi_method(inspect)
-    match(vehicle&, inspector&) { cout << "Inspect vehicle.\n"; }
-    match(car&, inspector&) { cout << "Inspect seat belts.\n"; next_method; }
-    match(car&, state_inspector&) { cout << "Check insurance.\n"; next_method; }
+void multi_method(inspect, const vehicle&, const inspector&)
+    match(const vehicle&, const inspector&) { cout << "Inspect vehicle.\n"; }
+    match(const car&, const inspector&) { cout << "Inspect seat belts.\n"; next_method; }
+    match(const car&, const state_inspector&) { cout << "Check insurance.\n"; next_method; }
 end_method
 
 int main() {

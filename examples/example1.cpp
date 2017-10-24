@@ -2,33 +2,31 @@
 #include <multimethods.h>
 using namespace std;
 
-struct vehicle : multimethods::unknown {};
+struct vehicle { virtual ~vehicle(){} };
 struct car : vehicle {};
-struct inspector : multimethods::unknown {};
+struct inspector { virtual ~inspector(){} };
 struct state_inspector : inspector {};
 
-void multi_method(inspect)
-    match(vehicle&, inspector&) { cout << "Inspect vehicle.\n"; }
-    match(car&, inspector&) { cout << "Inspect seat belts.\n"; next_method; }
-    match(car&, state_inspector&) { cout << "Check insurance.\n"; next_method; }
+void multi_method(inspect, const vehicle&, const inspector&)
+    match(const car&, const inspector&) { cout << "Inspect seat belts.\n"; next_method; }
+    match(const car&, const state_inspector&) { cout << "Check insurance.\n"; next_method; }
+    fallback { cout << "Inspect vehicle.\n"; }
 end_method
 
-string multi_method(join)
-    match(int x, int y, int z) { return to_string(x) + to_string(y) + to_string(z); }
+string multi_method(join, any, any)
+    match(int x, int y) { return to_string(x) + to_string(y); }
     match(string s1, string s2) { return s1 + s2; }
-    fallback { return "fallback"; }
 end_method
 
 int main() {
     inspect(car(), state_inspector());  // Check insurance. Inspect seat belts. Inspect vehicle.
 
-    try {
-        inspect(car(), true);
-    } catch(multimethods::not_implemented& e) {
-        cout << e.what() << endl; // inspect: not_implemented
-    }
-
-    cout << join(1, 2, 3) << endl; // 123
+    cout << join(1, 2) << endl; // 123
     cout << join("Hello,"s, " world."s) << endl; // Hello, world.
-    cout << join(false) << endl; // fallback
+
+    try {
+        join(true, false);
+    } catch(multimethods::not_implemented& e) {
+        cout << e.what() << endl; // join: not_implemented
+    }
 }

@@ -3,11 +3,11 @@
 #include <multimethods.h>
 using namespace std;
 
-struct base : public multimethods::unknown {};
+struct base { virtual ~base() {} };
 struct asteroid : base {};
 struct spaceship : base {};
 
-void multi_method(collide)
+void multi_method(collide, base&, base&)
     match(asteroid&, asteroid&) {}
     match(asteroid&, spaceship&) {}
     match(spaceship&, asteroid&) {}

@@ -8,7 +8,7 @@ struct derived1 : base1 {};
 struct base2 { virtual ~base2(){} };
 struct derived2 : base2 {};
 
-void multi_method(print1)
+void multi_method(print1, base1)
     match(base1&) { cout << "base1\n"; }
     match(derived1&) { cout << "derived1\n"; }
 end_method

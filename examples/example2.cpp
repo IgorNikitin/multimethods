@@ -2,7 +2,7 @@
 #include <multimethods.h>
 using namespace std;
 
-int multi_method(my_abs)
+int multi_method(my_abs, int)
     match(int n) { if(n > 0) next_method; return -n; }
     match(int n) { if(n < 0) next_method; return n; }
 end_method

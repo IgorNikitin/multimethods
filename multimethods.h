@@ -8,6 +8,7 @@
 /**********************************************************************************************/
 
 #include <algorithm>
+#include <any>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -25,20 +26,27 @@
 //   end_method
 //
 #define multi_method(name, ...) \
-    mm_proto_ret_ ## name(){}; \
+    mm_proto_ret_ ## name(__VA_ARGS__); \
     namespace mm_namespace_ ## name { \
         using namespace ::multimethods::detail; \
         \
-        using base_t     = multimethod_parameters<__VA_ARGS__>::base; \
-        using ret_type_t = std::result_of_t<decltype(&mm_proto_ret_ ## name)()>; \
-        using method_t   = abstract_method<ret_type_t, base_t>; \
+        using proto_t    = decltype(&mm_proto_ret_ ## name); \
+        using base1_t    = typename get_base_type<proto_t, 0>::type; \
+        using base2_t    = typename get_base_type<proto_t, 1>::type; \
+        using base3_t    = typename get_base_type<proto_t, 2>::type; \
+        using base4_t    = typename get_base_type<proto_t, 3>::type; \
+        using base5_t    = typename get_base_type<proto_t, 4>::type; \
+        using base6_t    = typename get_base_type<proto_t, 5>::type; \
+        using ret_type_t = typename function_traits<proto_t>::ret_type; \
+        using method_t   = abstract_method<ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>; \
         \
         static inline method_t* g_fallback { nullptr }; \
         static inline std::vector<method_t*> g_funcs; \
     }; \
     \
     template<class... Args> inline \
-    mm_namespace_ ## name::ret_type_t name(Args&&... args) { \
+    enable_if_t<std::is_invocable_v<decltype(&mm_proto_ret_ ## name), Args...>, mm_namespace_ ## name::ret_type_t> \
+    name(Args&&... args) { \
         for( auto m : mm_namespace_ ## name ::g_funcs ) \
             try { \
                 if(auto r = m->call(args...)) \
@@ -75,7 +83,7 @@
 #define end_method \
             }; \
             ::multimethods::detail::sort_functions sorter(funcs); \
-            g_funcs = sorter.sort_methods<ret_type_t, base_t>(); \
+            g_funcs = sorter.sort_methods<proto_t, ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>(); \
             for(auto it = g_funcs.begin() ; it != g_funcs.end() ; ++it) \
                 if((*it)->is_fallback()) { \
                     g_fallback = *it; \
@@ -149,112 +157,127 @@ static inline const std::type_index g_dummy_type_index( typeid(int) );
 /**********************************************************************************************/
 struct fallback_t {};
 
+
 /**********************************************************************************************/
-// Class to store reference to an argument and cast it on call an implementation.
+// Class to store reference to an argument and cast it on call an implementation (polymorphic types).
 //
 template<class B>
-struct arg final {
+struct arg_poly {
     B* base_;
+    bool const_;
+
+    // Dummy fallback constructor.
+    arg_poly(const fallback_t&)
+    : base_(nullptr)
+    , const_(false) {
+    }
+
+    // Constructs from polymorphic value - we can try to cast it to the base class,
+    // and cast to a destination class later.
+    template<class T, class = enable_if_t<is_polymorphic_v<T> && !is_base_of_v<B, T>>>
+    arg_poly(T& v)
+    : base_(const_cast<B*>(dynamic_cast<const B*>(&v)))
+    , const_(is_const_v<remove_reference_t<T>>) {
+    }
+
+    // Constructs from polymorphic value - we can try to cast it to the base class,
+    // and cast to a destination class later.
+    template<class T, class = enable_if_t<is_polymorphic_v<T> && is_base_of_v<B, T>>, class = void>
+    arg_poly(T& v)
+    : base_(const_cast<B*>(static_cast<const B*>(&v)))
+    , const_(is_const_v<remove_reference_t<T>>) {
+    }
+
+    template<class T>
+    remove_reference_t<T>* cast() {
+        if(is_const_v<remove_reference_t<T>> || !const_ )
+            return dynamic_cast<decay_t<T>*>(base_);
+        return nullptr;
+    }
+};
+
+/**********************************************************************************************/
+// Class to store reference to an argument and cast it on call an implementation (non-polymorphic types).
+//
+template<class B>
+struct arg_non_poly {
     bool const_;
     void* p_;
     const std::type_index type_;
 
-    // Constructs from polymorphic value - we can try to cast it to the base class,
-    // and cast to a destination class later.
-    template<class T, class = enable_if_t<is_polymorphic_v<decay_t<T>> && !is_base_of_v<B, T>>>
-    arg<B>(T& v)
-    : base_(const_cast<B*>(dynamic_cast<const B*>(&v)))
-    , const_(is_const_v<remove_reference_t<T>>)
-    , p_(const_cast<void*>(reinterpret_cast<const void*>(&v)))
-    , type_(typeid(v)) {
-    }
-
-    // Constructs from polymorphic value - we can try to cast it to the base class,
-    // and cast to a destination class later.
-    template<class T, class = enable_if_t<is_polymorphic_v<decay_t<T>> && is_base_of_v<B, T>>, class = void>
-    arg<B>(T& v)
-    : base_(const_cast<B*>(static_cast<const B*>(&v)))
-    , const_(is_const_v<remove_reference_t<T>>)
+    // Dummy fallback constructor.
+    arg_non_poly(const fallback_t&)
+    : const_(false)
+    , p_(nullptr)
     , type_(g_dummy_type_index) {
     }
 
-    // Constructs from non-polymorphic value.
-    template<class T, class = enable_if_t<!is_polymorphic_v<decay_t<T>>>, class = void, class = void>
-    arg<B>(T& v)
-    : base_(nullptr)
-    , const_(is_const_v<remove_reference_t<T>>)
+    template<class T>
+    arg_non_poly(T& v)
+    : const_(is_const_v<remove_reference_t<T>>)
     , p_(const_cast<void*>(reinterpret_cast<const void*>(&v)))
     , type_(typeid(v)) {
     }
 
-    // Cast to a polymorphic type
     template<class T>
-    auto cast() -> enable_if_t<is_polymorphic_v<decay_t<T>>, remove_reference_t<T>*> {
-        if(is_const_v<remove_reference_t<T>> || !const_ ) {
-            if(auto p = dynamic_cast<decay_t<T>*>(base_))
-                return p;
-            if(!base_ && type_ == typeid(T))
+    remove_reference_t<T>* cast() {
+        if(is_const_v<remove_reference_t<T>> || !const_ )
+            if(type_ == typeid(T))
                 return reinterpret_cast<remove_reference_t<T>*>(p_);
-        }
         return nullptr;
     }
+};
 
-    // Cast to a non-polymorphic type
+/**********************************************************************************************/
+// Class to store reference to an argument and cast it on call an implementation.
+//
+template<class B, class S=conditional_t<is_polymorphic_v<decay_t<B>>, arg_poly<B>, arg_non_poly<B>>>
+struct arg final : S {
+    arg(const fallback_t&) {}
+
     template<class T>
-    auto cast() -> enable_if_t<!is_polymorphic_v<decay_t<T>>, remove_reference_t<T>*> {
-        if(std::is_const_v<std::remove_reference_t<T>> || !const_ ) {
-            if(!base_ && type_ == typeid(T))
-                return reinterpret_cast<remove_reference_t<T>*>(p_);
-        }
-        return nullptr;
+    arg(T& v)
+    : S(v) {
     }
 };
 
 /**********************************************************************************************/
 // Base class for methods' implementations.
 //
-template<class T, class B>
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6>
 struct abstract_method {
     using ret_t = conditional_t<is_same_v<T, void>, bool, optional<T>>;
     virtual ~abstract_method() {}
     virtual ret_t call() { return {}; }
-    virtual ret_t call(arg<B>) { return {}; }
-    virtual ret_t call(arg<B>, arg<B>) { return {}; }
-    virtual ret_t call(arg<B>, arg<B>, arg<B>) { return {}; }
-    virtual ret_t call(arg<B>, arg<B>, arg<B>, arg<B>) { return {}; }
-    virtual ret_t call(arg<B>, arg<B>, arg<B>, arg<B>, arg<B>) { return {}; }
-    virtual ret_t call(arg<B>, arg<B>, arg<B>, arg<B>, arg<B>, arg<B>) { return {}; }
+    virtual ret_t call(arg<B1>) { return {}; }
+    virtual ret_t call(arg<B1>, arg<B2>) { return {}; }
+    virtual ret_t call(arg<B1>, arg<B2>, arg<B3>) { return {}; }
+    virtual ret_t call(arg<B1>, arg<B2>, arg<B3>, arg<B4>) { return {}; }
+    virtual ret_t call(arg<B1>, arg<B2>, arg<B3>, arg<B4>, arg<B5>) { return {}; }
+    virtual ret_t call(arg<B1>, arg<B2>, arg<B3>, arg<B4>, arg<B5>, arg<B6>) { return {}; }
     virtual bool is_fallback() const { return false; }
 };
 
 
 /**********************************************************************************************/
-template<class B>
-constexpr bool is_match_to_base() {
-    return true;
-}
+template<class P, class F>
+struct check_parameters_impl;
 
 /**********************************************************************************************/
-template<class B, class T, class... Args>
-constexpr bool is_match_to_base() {
-    if(is_polymorphic_v<decay_t<T>> && !is_base_of_v<B, decay_t<T>>)
-        return false;
-    return is_match_to_base<B, Args...>();
-}
-
-/**********************************************************************************************/
-template<class B, class F>
-struct check_base_class_impl;
-
-/**********************************************************************************************/
-template<class B, class R, class... Args>
-struct check_base_class_impl<B, R(*)(Args...)> {
-    static constexpr bool value = is_match_to_base<B, Args...>();
+template<class P, class R, class... Args>
+struct check_parameters_impl<P, R(*)(Args...)> {
+    static constexpr bool value = is_invocable_v<P, Args...>;
 };
 
 /**********************************************************************************************/
-template<class B, class F>
-struct check_base_class : public check_base_class_impl<B, F> {
+template<class P, class R>
+struct check_parameters_impl<P, R(*)(fallback_t)> {
+    static constexpr bool value = true;
+};
+
+/**********************************************************************************************/
+template<class P, class F>
+struct check_parameters : public check_parameters_impl<P, F> {
 };
 
 
@@ -415,6 +438,12 @@ template<class R>
 struct function_traits_impl<R(*)()> {
     enum { arity = 0 };
     using ret_type = R;
+    using arg1_type = void;
+    using arg2_type = void;
+    using arg3_type = void;
+    using arg4_type = void;
+    using arg5_type = void;
+    using arg6_type = void;
 };
 
 /**********************************************************************************************/
@@ -423,6 +452,11 @@ struct function_traits_impl<R(*)(T1)> {
     enum { arity = 1 };
     using ret_type = R;
     using arg1_type = T1;
+    using arg2_type = void;
+    using arg3_type = void;
+    using arg4_type = void;
+    using arg5_type = void;
+    using arg6_type = void;
 };
 
 /**********************************************************************************************/
@@ -432,6 +466,10 @@ struct function_traits_impl<R(*)(T1, T2)> {
     using ret_type = R;
     using arg1_type = T1;
     using arg2_type = T2;
+    using arg3_type = void;
+    using arg4_type = void;
+    using arg5_type = void;
+    using arg6_type = void;
 };
 
 /**********************************************************************************************/
@@ -442,6 +480,9 @@ struct function_traits_impl<R(*)(T1, T2, T3)> {
     using arg1_type = T1;
     using arg2_type = T2;
     using arg3_type = T3;
+    using arg4_type = void;
+    using arg5_type = void;
+    using arg6_type = void;
 };
 
 /**********************************************************************************************/
@@ -453,6 +494,8 @@ struct function_traits_impl<R(*)(T1, T2, T3, T4)> {
     using arg2_type = T2;
     using arg3_type = T3;
     using arg4_type = T4;
+    using arg5_type = void;
+    using arg6_type = void;
 };
 
 template<class R, class T1, class T2, class T3, class T4, class T5>
@@ -464,6 +507,7 @@ struct function_traits_impl<R(*)(T1, T2, T3, T4, T5)> {
     using arg3_type = T3;
     using arg4_type = T4;
     using arg5_type = T5;
+    using arg6_type = void;
 };
 
 template<class R, class T1, class T2, class T3, class T4, class T5, class T6>
@@ -493,17 +537,17 @@ struct function_traits : public function_traits_impl<F> {
 #define MM_CAST_6 MM_CAST_5 if(auto u6 = p6.template cast<typename function_traits<F>::arg6_type>())
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_0 final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_0 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_0(F f) : f_(f) {}
 
-    typename abstract_method<T, B>::ret_t call() { return f_(); }
+    typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call() { return f_(); }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_0_void final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_0_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_0_void(F f) : f_(f) {}
 
@@ -511,12 +555,12 @@ struct method_0_void final : abstract_method<T, B> {
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_1 final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_1 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_1(F f) : f_(f) {}
 
-    typename abstract_method<T, B>::ret_t call(arg<B> p1) {
+    typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1) {
         MM_CAST_1 return f_(*u1);
         return {};
     }
@@ -525,12 +569,12 @@ struct method_1 final : abstract_method<T, B> {
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_1_void final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_1_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_1_void(F f) : f_(f) {}
 
-    bool call(arg<B> p1) {
+    bool call(arg<B1> p1) {
         MM_CAST_1 { f_(*u1); return true; }
         return false;
     }
@@ -539,120 +583,120 @@ struct method_1_void final : abstract_method<T, B> {
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_2 final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_2 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_2(F f) : f_(f) {}
 
-    typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2) {
+    typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2) {
         MM_CAST_2 return f_(*u1, *u2);
         return {};
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_2_void final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_2_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_2_void(F f) : f_(f) {}
 
-    bool call(arg<B> p1, arg<B> p2) {
+    bool call(arg<B1> p1, arg<B2> p2) {
         MM_CAST_2 { f_(*u1, *u2); return true; }
         return false;
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_3 final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_3 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_3(F f) : f_(f) {}
 
-    typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3) {
+    typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3) {
         MM_CAST_3 return f_(*u1, *u2, *u3);
         return {};
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_3_void final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_3_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_3_void(F f) : f_(f) {}
 
-    bool call(arg<B> p1, arg<B> p2, arg<B> p3) {
+    bool call(arg<B1> p1, arg<B2> p2, arg<B3> p3) {
         MM_CAST_3 { f_(*u1, *u2, *u3); return true; }
         return false;
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_4 final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_4 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_4(F f) : f_(f) {}
 
-    typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4) {
+    typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4) {
         MM_CAST_4 return f_(*u1, *u2, *u3, *u4);
         return {};
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_4_void final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_4_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_4_void(F f) : f_(f) {}
 
-    bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4) {
+    bool call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4) {
         MM_CAST_4 { f_(*u1, *u2, *u3, *u4); return true; }
         return false;
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_5 final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_5 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_5(F f) : f_(f) {}
 
-    typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5) {
+    typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5) {
         MM_CAST_5 return f_(*u1, *u2, *u3, *u4, *u5);
         return {};
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_5_void final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_5_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_5_void(F f) : f_(f) {}
 
-    bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5) {
+    bool call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5) {
         MM_CAST_5 { f_(*u1, *u2, *u3, *u4, *u5); return true; }
         return false;
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_6 final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_6 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_6(F f) : f_(f) {}
 
-    typename abstract_method<T, B>::ret_t call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5, arg<B> p6) {
+    typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5, arg<B6> p6) {
         MM_CAST_6 return f_(*u1, *u2, *u3, *u4, *u5, *u6);
         return {};
     }
 };
 
 /**********************************************************************************************/
-template<class T, class B, class F>
-struct method_6_void final : abstract_method<T, B> {
+template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
+struct method_6_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     F f_;
     method_6_void(F f) : f_(f) {}
 
-    bool call(arg<B> p1, arg<B> p2, arg<B> p3, arg<B> p4, arg<B> p5, arg<B> p6) {
+    bool call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5, arg<B6> p6) {
         MM_CAST_6 { f_(*u1, *u2, *u3, *u4, *u5, *u6); return true; }
         return false;
     }
@@ -661,16 +705,18 @@ struct method_6_void final : abstract_method<T, B> {
 
 /**********************************************************************************************/
 #define MM_MAKE_METHOD(N) \
-    template<class T, class B, class F> inline \
-    auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == N && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> { \
-        static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class."); \
-        return new method_ ## N<T, B, F>(f); \
+    template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
+    auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == N && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
+        static_assert(function_traits<F>::arity == function_traits<P>::arity, "Implementation's parameters count mismatch."); \
+        static_assert(check_parameters<P, F>::value, "Implementation's parameters types mismatch."); \
+        return new method_ ## N<T, B1, B2, B3, B4, B5, B6, F>(f); \
     } \
     \
-    template<class T, class B, class F> inline \
-    auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == N && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B>*> { \
-        static_assert(check_base_class<B, F>::value, "Please specify common base class for polymorphic types in 'define_method' statement, or use 'multimethods::unknown' as base class."); \
-        return new method_ ## N ## _void<T, B, F>(f); \
+    template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
+    auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == N && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
+        static_assert(function_traits<F>::arity == function_traits<P>::arity, "Implementation's parameters count mismatch."); \
+        static_assert(check_parameters<P, F>::value, "Implementation's parameters types mismatch."); \
+        return new method_ ## N ## _void<T, B1, B2, B3, B4, B5, B6, F>(f); \
     }
 
 /**********************************************************************************************/
@@ -702,13 +748,6 @@ struct method_result : public method_result_impl<T> {
 
 
 /**********************************************************************************************/
-template<class U=::multimethods::unknown>
-struct multimethod_parameters {
-    using base = U;
-};
-
-
-/**********************************************************************************************/
 template<std::size_t N, class T, class... Args>
 struct get_type_by_index {
     using type = typename get_type_by_index<N - 1, Args...>::type;
@@ -728,6 +767,7 @@ struct sort_functions {
     sort_functions( const std::tuple<bool, Funcs...>& funcs ) : funcs_(funcs) {}
 
     static constexpr int N = sizeof...(Funcs);
+    static_assert(N>0, "Expected atleasy one implementation.");
 
     template<std::size_t N>
     using func_type_t = typename get_type_by_index<N, Funcs...>::type;
@@ -769,7 +809,7 @@ struct sort_functions {
     }
 
     // Sorts methods and return vector with instances of 'abstract_method'
-    template<class TR, class BR>
+    template<class TP, class TR, class BR1, class BR2, class BR3, class BR4, class BR5, class BR6>
     auto sort_methods() {
         // Use indexes cause we cannot sort tuple itself
         int indexes[N];
@@ -797,12 +837,12 @@ struct sort_functions {
         } );
 
         // Create and fill vector with methods
-        std::vector<abstract_method<TR, BR>*> r(N);
+        std::vector<abstract_method<TR, BR1, BR2, BR3, BR4, BR5, BR6>*> r(N);
 
         for(int i = 0 ; i < N ; ++i) {
             switch(indexes[i]) {
                 #define MM_FILL_VECTOR(I) \
-                    case I: r[i] = make_method<TR, BR, F ## I>(std::get<I < N ? I + 1 : 1>(funcs_)); break
+                    case I: r[i] = make_method<TP, TR, BR1, BR2, BR3, BR4, BR5, BR6, F ## I>(std::get<I < N ? I + 1 : 1>(funcs_)); break
 
                 MM_FILL_VECTOR(0); MM_FILL_VECTOR(1); MM_FILL_VECTOR(2); MM_FILL_VECTOR(3);
                 MM_FILL_VECTOR(4); MM_FILL_VECTOR(5); MM_FILL_VECTOR(6); MM_FILL_VECTOR(7);
@@ -822,6 +862,30 @@ struct sort_functions {
 
         return r;
     }
+};
+
+
+/**********************************************************************************************/
+template<class F, int N>
+struct get_base_type_impl {
+    using type = conditional_t<N==0,
+        typename function_traits<F>::arg1_type,
+        conditional_t<N==1,
+            typename function_traits<F>::arg2_type,
+            conditional_t<N==2,
+                typename function_traits<F>::arg3_type,
+                conditional_t<N==3,
+                    typename function_traits<F>::arg4_type,
+                    conditional_t<N==4,
+                        typename function_traits<F>::arg5_type,
+                        typename function_traits<F>::arg6_type>>>>>;
+};
+
+/**********************************************************************************************/
+template<class F, int N>
+struct get_base_type {
+    static constexpr int arity = function_traits<F>::arity;
+    using type = conditional_t<(arity>N), decay_t<typename get_base_type_impl<F, (arity>N?N:0)>::type>, unknown>;
 };
 
 

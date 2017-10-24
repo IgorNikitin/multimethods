@@ -1,23 +1,22 @@
 #include <multimethods.h>
 #include <iostream>
-using namespace multimethods;
 using namespace std;
 
-struct role : unknown {};
+struct role { virtual ~role() {} };
 struct manager : role {};
 struct ceo : role {};
 
-struct expense : unknown {};
+struct expense { virtual ~expense() {} };
 struct plane : expense {};
 struct cab : expense {};
 
-struct reason : unknown {};
+struct reason { virtual ~reason() {} };
 struct business : reason {};
 struct comfort : reason {};
 
-bool multi_method(approve)
-    match(expense&, ceo&, reason&) { return true; }
-    match(cab&, manager&, business&) { return true; }
+bool multi_method(approve, const expense&, const role&, const reason&)
+    match(const expense&, const ceo&, const reason&) { return true; }
+    match(const cab&, const manager&, const business&) { return true; }
     fallback { return false; }
 end_method
 
