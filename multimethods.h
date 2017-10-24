@@ -152,11 +152,11 @@ namespace detail {
 using namespace std;
 
 /**********************************************************************************************/
-static inline const std::type_index g_dummy_type_index( typeid(int) );
-
-/**********************************************************************************************/
 struct fallback_t {};
 
+/**********************************************************************************************/
+static inline const std::type_index g_dummy_type_index( typeid(int) );
+static inline fallback_t g_dummy_fallback;
 
 /**********************************************************************************************/
 // Class to store reference to an argument and cast it on call an implementation (polymorphic types).
@@ -190,7 +190,9 @@ struct arg_poly {
 
     template<class T>
     remove_reference_t<T>* cast() {
-        if(is_const_v<remove_reference_t<T>> || !const_ )
+        if constexpr(is_same_v<T, fallback_t>)
+            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
+        else if(is_const_v<remove_reference_t<T>> || !const_ )
             return dynamic_cast<decay_t<T>*>(base_);
         return nullptr;
     }
@@ -221,7 +223,9 @@ struct arg_non_poly {
 
     template<class T>
     remove_reference_t<T>* cast() {
-        if(is_const_v<remove_reference_t<T>> || !const_ )
+        if constexpr(is_same_v<T, fallback_t>)
+            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
+        else if(is_const_v<remove_reference_t<T>> || !const_ )
             if(type_ == typeid(T))
                 return reinterpret_cast<remove_reference_t<T>*>(p_);
         return nullptr;
@@ -706,15 +710,15 @@ struct method_6_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 /**********************************************************************************************/
 #define MM_MAKE_METHOD(N) \
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
-    auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == N && !std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
-        static_assert(function_traits<F>::arity == function_traits<P>::arity, "Implementation's parameters count mismatch."); \
+    auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && !is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
+        static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Implementation's parameters count mismatch."); \
         static_assert(check_parameters<P, F>::value, "Implementation's parameters types mismatch."); \
         return new method_ ## N<T, B1, B2, B3, B4, B5, B6, F>(f); \
     } \
     \
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
-    auto make_method(F f) -> std::enable_if_t<function_traits<F>::arity == N && std::is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
-        static_assert(function_traits<F>::arity == function_traits<P>::arity, "Implementation's parameters count mismatch."); \
+    auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
+        static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Implementation's parameters count mismatch."); \
         static_assert(check_parameters<P, F>::value, "Implementation's parameters types mismatch."); \
         return new method_ ## N ## _void<T, B1, B2, B3, B4, B5, B6, F>(f); \
     }
