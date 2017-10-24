@@ -19,7 +19,7 @@ int main() {
 
    clock_t begin = clock();
 
-   for(int i = 0; i < 100000000; ++i)
+   for(int i = 0; i < 10000000000; ++i)
        collide(a, a);
 
     const double ms = double(clock() - begin) / CLOCKS_PER_SEC;

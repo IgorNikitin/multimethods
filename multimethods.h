@@ -150,6 +150,26 @@ static inline fallback_t g_dummy_fallback;
 // Class to store reference to an argument and cast it on call an implementation (polymorphic non-const type).
 //
 template<class B>
+struct arg_arithmetic {
+    B value_;
+
+    // Dummy fallback constructor.
+    arg_arithmetic(const fallback_t&) {}
+
+    arg_arithmetic(const B& v)
+    : value_(v) {
+    }
+
+    template<class T>
+    remove_reference_t<T>* cast() {
+        return &value_;
+    }
+};
+
+/**********************************************************************************************/
+// Class to store reference to an argument and cast it on call an implementation (polymorphic non-const type).
+//
+template<class B>
 struct arg_poly_non_const {
     B* const base_;
 
@@ -289,9 +309,14 @@ struct arg_non_poly {
 /**********************************************************************************************/
 // Class to store reference to an argument and cast it on call an implementation.
 //
-template<class B, class S=conditional_t<is_polymorphic_v<decay_t<B>>,
-    conditional_t<is_const_v<remove_reference_t<B>>, arg_poly<B>, arg_poly_non_const<B>>,
-    conditional_t<is_const_v<remove_reference_t<B>>, arg_non_poly<B>, arg_non_poly_non_const<B>>>>
+template<class B, class S=
+    conditional_t<
+        is_arithmetic_v<B>,
+        arg_arithmetic<B>,
+        conditional_t<
+            is_polymorphic_v<decay_t<B>>,
+                conditional_t<is_const_v<remove_reference_t<B>>, arg_poly<B>, arg_poly_non_const<B>>,
+                conditional_t<is_const_v<remove_reference_t<B>>, arg_non_poly<B>, arg_non_poly_non_const<B>>>>>
 struct arg final : S {
     arg(const fallback_t&) {}
 
@@ -327,24 +352,80 @@ struct abstract_method {
 
 
 /**********************************************************************************************/
-template<class P, class F>
+template<class... Args> constexpr enable_if_t<sizeof...(Args) == 0, bool> check_types() { return false; }
+template<class T1> constexpr bool check_types() { return false; }
+template<class T1, class T2, class T3> constexpr bool check_types() { return false; }
+template<class T1, class T2, class T3, class T4, class T5> constexpr bool check_types() { return false; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7> constexpr bool check_types() { return false; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9> constexpr bool check_types() { return false; }
+template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, class T8, class T9, class T10, class T11> constexpr bool check_types() { return false; }
+
+/**********************************************************************************************/
+template<class T, class U>
+constexpr bool check_types() {
+    if constexpr(is_same_v<decay_t<T>, decay_t<U>>)
+        return true;
+    if constexpr(is_base_of_v<decay_t<T>, decay_t<U>>)
+        return true;
+    if constexpr(is_arithmetic_v<T>)
+        return false;
+    return is_convertible_v<U, T>;
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class U1, class U2>
+constexpr int check_types() {
+    return check_types<T1, U1>() &&
+           check_types<T2, U2>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class U1, class U2, class U3>
+constexpr int check_types() {
+    return check_types<T1, U1>() &&
+           check_types<T2, T3, U2, U3>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class U1, class U2, class U3, class U4>
+constexpr int check_types() {
+    return check_types<T1, U1>() &&
+           check_types<T2, T3, T4, U2, U3, U4>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class T5, class U1, class U2, class U3, class U4, class U5>
+constexpr int check_types() {
+    return check_types<T1, U1>() &&
+           check_types<T2, T3, T4, T5, U2, U3, U4, U5>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class T5, class T6, class U1, class U2, class U3, class U4, class U5, class U6>
+constexpr int check_types() {
+    return check_types<T1, U1>() &&
+           check_types<T2, T3, T4, T5, T6, U2, U3, U4, U5, U6>();
+}
+
+/**********************************************************************************************/
+template<class F1, class F2>
 struct check_parameters_impl;
 
 /**********************************************************************************************/
-template<class P, class R, class... Args>
-struct check_parameters_impl<P, R(*)(Args...)> {
-    static constexpr bool value = is_invocable_v<P, Args...>;
+template<class R, class... Args1, class... Args2>
+struct check_parameters_impl<R(*)(Args1...), R(*)(Args2...)> {
+    static constexpr bool value = check_types<Args1..., Args2...>();
 };
 
 /**********************************************************************************************/
-template<class P, class R>
-struct check_parameters_impl<P, R(*)(fallback_t)> {
+template<class R, class... Args>
+struct check_parameters_impl<R(*)(Args...), R(*)(fallback_t)> {
     static constexpr bool value = true;
 };
 
 /**********************************************************************************************/
-template<class P, class F>
-struct check_parameters : public check_parameters_impl<P, F> {
+template<class F1, class F2>
+struct check_parameters : public check_parameters_impl<F1, F2> {
 };
 
 
@@ -775,14 +856,14 @@ struct method_6_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
     auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && !is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
         static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Implementation's parameters count mismatch."); \
-        static_assert(check_parameters<P, F>::value, "Implementation's parameters types mismatch."); \
+        static_assert(check_parameters<P, F>::value, "Incompatible implementation's parameters types."); \
         return new method_ ## N<T, B1, B2, B3, B4, B5, B6, F>(f); \
     } \
     \
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
     auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
         static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Implementation's parameters count mismatch."); \
-        static_assert(check_parameters<P, F>::value, "Implementation's parameters types mismatch."); \
+        static_assert(check_parameters<P, F>::value, "Incompatible implementation's parameters types."); \
         return new method_ ## N ## _void<T, B1, B2, B3, B4, B5, B6, F>(f); \
     }
 
