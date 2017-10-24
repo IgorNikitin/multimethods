@@ -2,31 +2,50 @@
 #include <multimethods.h>
 using namespace std;
 
-struct vehicle { virtual ~vehicle(){} };
-struct car : vehicle {};
-struct inspector { virtual ~inspector(){} };
-struct state_inspector : inspector {};
+struct thing { virtual ~thing() {} };
+struct lizard : thing {};
+struct paper : thing {};
+struct rock : thing {};
+struct scissors : thing {};
+struct spock : thing {};
 
-void multi_method(inspect, const vehicle&, const inspector&)
-    match(const car&, const inspector&) { cout << "Inspect seat belts.\n"; next_method; }
-    match(const car&, const state_inspector&) { cout << "Check insurance.\n"; next_method; }
-    match(const vehicle&, const inspector&) { cout << "Inspect vehicle.\n"; }
+void multi_method(rpsls, thing, thing)
+    match(lizard, paper)        { cout << "Lizard eats Paper\n"; }
+    match(lizard, spock)        { cout << "Lizard poisons Spock\n"; }
+    match(lizard, lizard)       { cout << "Try again\n"; }
+    match(rock, lizard)         { cout << "Rock crushes Lizard\n"; }
+    match(rock, scissors)       { cout << "Rock crushes Scissors\n"; }
+    match(rock, rock)           { cout << "Try again\n"; }
+    match(paper, rock)          { cout << "Paper covers Rock\n"; }
+    match(paper, spock)         { cout << "Paper disproves Spock\n"; }
+    match(paper, paper)         { cout << "Try again\n"; }
+    match(scissors, lizard)     { cout << "Scissors decapitates Lizard\n"; }
+    match(scissors, paper)      { cout << "Scissors cuts Paper\n"; }
+    match(scissors, scissors)   { cout << "Try again\n"; }
+    match(spock, rock)          { cout << "Spock vaporizes Rock\n"; }
+    match(spock, scissors)      { cout << "Spock smashes Scissors\n"; }
+    match(spock, spock)         { cout << "Try again\n"; }
+    match(thing& t1, thing& t2) { rpsls(t2, t1); }
 end_method
 
-string multi_method(join, any, any)
-    match(int x, int y) { return to_string(x) + to_string(y); }
-    match(string s1, string s2) { return s1 + s2; }
+struct shape { virtual ~shape() {} };
+struct rectangle : shape {};
+struct triangle : shape {};
+
+shape multi_method(overlap, shape, shape)
+    match(rectangle, rectangle) { return rectangle(); }
 end_method
 
 int main() {
-    inspect(car(), state_inspector());  // Check insurance. Inspect seat belts. Inspect vehicle.
-
-    cout << join(1, 2) << endl; // 123
-    cout << join("Hello,"s, " world."s) << endl; // Hello, world.
+    rpsls(paper(), scissors());
+    rpsls(lizard(), rock());
+    rpsls(spock(), spock());
+    // --------------
+    overlap(rectangle(), rectangle());
 
     try {
-        join(true, false);
+        overlap(rectangle(), triangle());
     } catch(multimethods::not_implemented& e) {
-        cout << e.what() << endl; // join: not_implemented
+        cout << e.what() << endl; // overlap: not_implemented
     }
 }
