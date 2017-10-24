@@ -56,10 +56,12 @@
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
+        \
         if(g_fallback) { \
             if(auto r = g_fallback->call(g_dummy_fallback)) \
                 return method_result<ret_type_t>::unwrap(r); \
         } \
+        \
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
@@ -86,12 +88,14 @@
             }; \
             ::multimethods::detail::sort_functions sorter(funcs); \
             g_impls = sorter.sort_methods<proto_t, ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>(); \
+            \
             for(auto it = g_impls.begin() ; it != g_impls.end() ; ++it) \
                 if((*it)->is_fallback()) { \
                     g_fallback = *it; \
                     g_impls.erase(it); \
                     break; \
                 } \
+            \
             return true; \
         }(); \
     }
@@ -99,8 +103,8 @@
 /**********************************************************************************************/
 // Adds fallback handler for a multimethod.
 //
-//   define_method(collide)
-//   fallback { cout << "All is fine.\n"; }
+//   define_method(collide, any, any)
+//      fallback {}
 //
 #define fallback , +[](::multimethods::detail::fallback_t) -> ret_type_t
 
@@ -133,7 +137,7 @@ namespace detail {
 using namespace std;
 
 /**********************************************************************************************/
-struct fallback_t {};
+struct fallback_t {}; // Special type to use as parameter of a fallback function (to detect it later).
 
 /**********************************************************************************************/
 static inline const std::type_index g_dummy_type_index( typeid(int) );
