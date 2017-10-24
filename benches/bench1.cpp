@@ -15,11 +15,11 @@ end_method
 
 int main() {
    asteroid a;
-   spaceship s1, s2;
+   spaceship s;
 
    clock_t begin = clock();
 
-   for(int i = 0; i < 1000000; ++i)
+   for(int i = 0; i < 100000000; ++i)
        collide(a, a);
 
     const double ms = double(clock() - begin) / CLOCKS_PER_SEC;

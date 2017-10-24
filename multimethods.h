@@ -40,8 +40,11 @@
         using ret_type_t     = proto_traits_t::ret_type; \
         using method_t       = abstract_method<ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>; \
         \
+        static constexpr int MM_MAX_IMPLEMENTATIONS = 64; \
+        \
         static inline method_t* g_fallback { nullptr }; \
-        static inline std::vector<method_t*> g_impls; \
+        static inline method_t* g_impls[MM_MAX_IMPLEMENTATIONS]; \
+        static inline method_t** g_impls_end { g_impls }; \
     }; \
     \
     template<class... Args> inline \
@@ -50,9 +53,9 @@
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
         \
-        for( auto m : g_impls ) \
+        for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = m->call(args...)) \
+                if(auto r = (*m)->call(args...)) \
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
@@ -87,13 +90,13 @@
 #define end_method \
             }; \
             ::multimethods::detail::sort_functions sorter(funcs); \
-            g_impls = sorter.sort_methods<proto_t, ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>(); \
+            const auto methods = sorter.sort_methods<proto_t, ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>(); \
             \
-            for(auto it = g_impls.begin() ; it != g_impls.end() ; ++it) \
-                if((*it)->is_fallback()) { \
-                    g_fallback = *it; \
-                    g_impls.erase(it); \
-                    break; \
+            for(auto it: methods) \
+                if(it->is_fallback()) { \
+                    g_fallback = it; \
+                } else { \
+                    *g_impls_end++ = it; \
                 } \
             \
             return true; \
@@ -144,6 +147,42 @@ static inline const std::type_index g_dummy_type_index( typeid(int) );
 static inline fallback_t g_dummy_fallback;
 
 /**********************************************************************************************/
+// Class to store reference to an argument and cast it on call an implementation (polymorphic non-const type).
+//
+template<class B>
+struct arg_poly_non_const {
+    B* const base_;
+
+    // Dummy fallback constructor.
+    arg_poly_non_const(const fallback_t&)
+    : base_(nullptr) {
+    }
+
+    // Constructs from polymorphic value - we can try to cast it to the base class,
+    // and cast to a destination class later.
+    template<class T, class = enable_if_t<is_polymorphic_v<T> && !is_base_of_v<B, T>>>
+    arg_poly_non_const(T& v)
+    : base_(const_cast<B*>(dynamic_cast<const B*>(&v))) {
+    }
+
+    // Constructs from polymorphic value - we can try to cast it to the base class,
+    // and cast to a destination class later.
+    template<class T, class = enable_if_t<is_polymorphic_v<T> && is_base_of_v<B, T>>, class = void>
+    arg_poly_non_const(T& v)
+    : base_(const_cast<B*>(static_cast<const B*>(&v))) {
+    }
+
+    template<class T>
+    remove_reference_t<T>* cast() {
+        if constexpr(is_same_v<T, fallback_t>)
+            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
+        else
+            return dynamic_cast<decay_t<T>*>(base_);
+        return nullptr;
+    }
+};
+
+/**********************************************************************************************/
 // Class to store reference to an argument and cast it on call an implementation (polymorphic types).
 //
 template<class B>
@@ -179,6 +218,36 @@ struct arg_poly {
             return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
         else if(is_const_v<remove_reference_t<T>> || !const_ )
             return dynamic_cast<decay_t<T>*>(base_);
+        return nullptr;
+    }
+};
+
+/**********************************************************************************************/
+// Class to store reference to an argument and cast it on call an implementation (non-polymorphic non-const type).
+//
+template<class B>
+struct arg_non_poly_non_const {
+    void* p_;
+    const std::type_index type_;
+
+    // Dummy fallback constructor.
+    arg_non_poly_non_const(const fallback_t&)
+    : p_(nullptr)
+    , type_(g_dummy_type_index) {
+    }
+
+    template<class T>
+    arg_non_poly_non_const(T& v)
+    : p_(const_cast<void*>(reinterpret_cast<const void*>(&v)))
+    , type_(typeid(v)) {
+    }
+
+    template<class T>
+    remove_reference_t<T>* cast() {
+        if constexpr(is_same_v<T, fallback_t>)
+            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
+        if(type_ == typeid(T))
+            return reinterpret_cast<remove_reference_t<T>*>(p_);
         return nullptr;
     }
 };
@@ -220,7 +289,9 @@ struct arg_non_poly {
 /**********************************************************************************************/
 // Class to store reference to an argument and cast it on call an implementation.
 //
-template<class B, class S=conditional_t<is_polymorphic_v<decay_t<B>>, arg_poly<B>, arg_non_poly<B>>>
+template<class B, class S=conditional_t<is_polymorphic_v<decay_t<B>>,
+    conditional_t<is_const_v<remove_reference_t<B>>, arg_poly<B>, arg_poly_non_const<B>>,
+    conditional_t<is_const_v<remove_reference_t<B>>, arg_non_poly<B>, arg_non_poly_non_const<B>>>>
 struct arg final : S {
     arg(const fallback_t&) {}
 
