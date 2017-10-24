@@ -147,22 +147,22 @@ static inline const std::type_index g_dummy_type_index( typeid(int) );
 static inline fallback_t g_dummy_fallback;
 
 /**********************************************************************************************/
-// Class to store reference to an argument and cast it on call an implementation (polymorphic non-const type).
+// Class to auto cast an argument for a non-polymorphic type.
 //
 template<class B>
-struct arg_arithmetic {
-    B value_;
+struct arg_cast {
+    B* value_ { nullptr };
+    arg_cast(const fallback_t&) {}
+    arg_cast(B& v) : value_(&v) {}
 
-    // Dummy fallback constructor.
-    arg_arithmetic(const fallback_t&) {}
-
-    arg_arithmetic(const B& v)
-    : value_(v) {
+    template<class T, class = enable_if_t<is_same_v<decay_t<B>, decay_t<T>>>>
+    remove_reference_t<T>* cast() {
+        return value_;
     }
 
-    template<class T>
-    remove_reference_t<T>* cast() {
-        return &value_;
+    template<class T, class = enable_if_t<!is_same_v<decay_t<B>, decay_t<T>>>>
+    optional<remove_reference_t<T>> cast() {
+        return make_optional<T>( *value_ );
     }
 };
 
@@ -312,7 +312,7 @@ struct arg_non_poly {
 template<class B, class S=
     conditional_t<
         is_arithmetic_v<B>,
-        arg_arithmetic<B>,
+        arg_cast<B>,
         conditional_t<
             is_polymorphic_v<decay_t<B>>,
                 conditional_t<is_const_v<remove_reference_t<B>>, arg_poly<B>, arg_poly_non_const<B>>,
@@ -367,8 +367,6 @@ constexpr bool check_types() {
         return true;
     if constexpr(is_base_of_v<decay_t<T>, decay_t<U>>)
         return true;
-    if constexpr(is_arithmetic_v<T>)
-        return false;
     return is_convertible_v<U, T>;
 }
 
