@@ -69,7 +69,31 @@ Multimethods for C++17
         collide(s, s);
     }
 ```
-час виконання на 2600K 3.4GHz з компілятором clang++ склав близько 57.5сек (57.5нс на виклик). Це число не є фіксованими і може бути змінено з часом через оптимізації, або, навпаки, через додавання нової функціональності.
+час виконання на 2600K 3.4GHz з компілятором clang++ склав близько 57.5сек (57.5нс на виклик). Цей час можна покращити, якщо надати інформацію про батьківські класи за допомогою макросу MM_CLASS:
+
+```C++
+    struct thing { MM_CLASS() virtual ~thing() {} };
+    struct asteroid final : thing { MM_CLASS(thing) };
+    struct spaceship final : thing { MM_CLASS(thing) };
+
+    void multi_method(collide, thing&, thing&)
+        match(asteroid&, asteroid&) {}
+        match(asteroid&, spaceship&) {}
+        match(spaceship&, asteroid&) {}
+        match(spaceship&, spaceship&) {}
+    end_method
+    ...
+    asteroid a;
+    spaceship s;
+    
+    for(int i = 0; i < 250000000; ++i) {
+        collide(a, a);
+        collide(a, s);
+        collide(s, a);
+        collide(s, s);
+    }
+```
+Для цього варіанту час виконання склав 13.77сек (13.77нс на виклик). Ці числа не є фіксованими і можуть бути змінені з часом через оптимізації, або, навпаки, через додавання нової функціональності.
 
 ## Приклад використання
 
