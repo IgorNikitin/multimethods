@@ -338,6 +338,12 @@ struct arg final : S {
     arg(const fallback_t&) {}
 
     template<class T>
+    arg(T& v) : S(v) {}
+
+    template<class T>
+    arg(const T& v) : S(v) {}
+
+    template<class T>
     arg(T&& v) : S(std::forward<T>(v)) {}
 };
 
@@ -380,9 +386,10 @@ template<class T, class U>
 constexpr bool check_types() {
     if constexpr(is_same_v<decay_t<T>, decay_t<U>>)
         return true;
-    if constexpr(is_polymorphic_v<decay_t<T>> && is_base_of_v<decay_t<T>, decay_t<U>>)
-        return true;
-    return is_convertible_v<T, U>;
+    else
+        static_assert(is_polymorphic_v<decay_t<T>> && is_base_of_v<decay_t<T>, decay_t<U>>, "Implementation can extend parameter's type, but not replace it.");
+
+    return true;
 }
 
 /**********************************************************************************************/
