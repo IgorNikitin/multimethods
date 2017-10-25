@@ -13,7 +13,6 @@
 #include <optional>
 #include <string>
 #include <tuple>
-#include <typeindex>
 #include <vector>
 
 /**********************************************************************************************/
@@ -333,12 +332,41 @@ struct try_next final : std::exception {
     virtual const char* what() const noexcept { return "next_method"; }
 };
 
+
+/**********************************************************************************************/
+// Helper class to wrap a reference.
+//
+template<class U>
+struct optional_ref {
+    optional_ref() : p_(nullptr) {}
+    optional_ref(U v) : p_(&v) {}
+
+    operator bool() const { return p_; }
+    U operator *() const { return static_cast<U>(*p_); }
+
+    remove_reference_t<U>* p_;
+};
+
+/**********************************************************************************************/
+template<class T, class B = conditional_t<
+    is_reference_v<T>,
+    optional_ref<T>,
+    optional<remove_reference_t<T>>>
+>
+struct method_ret_type : B {
+    method_ret_type() {}
+
+    template<class U>
+    method_ret_type(U&& v) : B(std::forward<U>(v)) {}
+};
+
+
 /**********************************************************************************************/
 // Base class for methods' implementations.
 //
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6>
 struct abstract_method {
-    using ret_t = conditional_t<is_same_v<T, void>, bool, optional<T>>;
+    using ret_t = conditional_t<is_same_v<T, void>, bool, method_ret_type<T>>;
     virtual ~abstract_method() {}
     virtual ret_t call() { return {}; }
     virtual ret_t call(arg<B1>) { return {}; }
@@ -841,7 +869,7 @@ MM_MAKE_METHOD(6)
 /**********************************************************************************************/
 template<class T>
 struct method_result_impl {
-    static T& unwrap(std::optional<T>& o) { return *o; }
+    static T unwrap(method_ret_type<T>& o) { return *o; }
 };
 
 /**********************************************************************************************/

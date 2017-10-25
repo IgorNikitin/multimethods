@@ -5,9 +5,9 @@ using namespace std;
 struct base { virtual ~base(){} };
 struct derived : base {};
 
-void multi_method(print, base)
-    match(base&) { cout << "base\n"; }
-    match(derived&) { cout << "derived\n"; }
+base& multi_method(print, base&)
+    match(base& b) { cout << "base\n"; return b; }
+    match(derived& d) { cout << "derived\n"; return d; }
 end_method
 
 
