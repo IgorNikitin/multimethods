@@ -117,6 +117,19 @@
 //
 #define next_method throw ::multimethods::detail::try_next();
 
+/**********************************************************************************************/
+// Macro to add info used to detect class' instances
+//
+#define MM_CLASS(...) \
+    public: \
+    static inline const int mm_class_id = ::multimethods::detail::g_class_id_counter++; \
+    \
+    virtual const void* mm_cast(int n) const { \
+        if(n == mm_class_id || ::multimethods::detail::match_class_id< __VA_ARGS__>(n)) \
+            return reinterpret_cast<const void*>(this); \
+        return nullptr; \
+    }
+
 
 /**********************************************************************************************/
 namespace multimethods {
@@ -143,6 +156,31 @@ struct fallback_t {}; // Special type to use as parameter of a fallback function
 
 /**********************************************************************************************/
 static inline fallback_t g_dummy_fallback;
+static inline int g_class_id_counter = 0;
+
+
+/**********************************************************************************************/
+// Helper function to fast checking of class instances that used MM_CLASS macro
+//
+template<class... Args>
+constexpr enable_if_t<sizeof...(Args) == 0, bool>
+match_class_id(int) {
+    return false;
+}
+
+/**********************************************************************************************/
+template<class T, class... Args>
+constexpr bool match_class_id(int n) {
+    return T::mm_class_id == n || match_class_id<Args...>(n);
+}
+
+/**********************************************************************************************/
+template <class T, class = int>
+struct has_class_info : std::false_type {};
+
+/**********************************************************************************************/
+template <class T>
+struct has_class_info<T, decltype((void) T::mm_class_id, 0)> : std::true_type {};
 
 
 /**********************************************************************************************/
@@ -170,7 +208,20 @@ struct arg_poly_non_const {
     }
 
     template<class T>
-    remove_reference_t<T>* cast() {
+    enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, remove_reference_t<T>*> cast() {
+        return base_;
+    }
+
+    template<class T, class TD = remove_reference_t<T>>
+    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && has_class_info<decay_t<T>>::value, TD*> cast() {
+        if constexpr(!is_same_v<decay_t<T>, fallback_t>)
+            return const_cast<TD*>(reinterpret_cast<const TD*>(base_->mm_cast(decay_t<T>::mm_class_id)));
+        else
+            return &g_dummy_fallback;
+    }
+
+    template<class T>
+    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && !has_class_info<decay_t<T>>::value, remove_reference_t<T>*> cast() {
         if constexpr(!is_same_v<decay_t<T>, fallback_t>)
             return dynamic_cast<decay_t<T>*>(base_);
         else
@@ -207,10 +258,28 @@ struct arg_poly_const {
     }
 
     template<class T>
-    remove_reference_t<T>* cast() {
+    enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, remove_reference_t<T>*> cast() {
+        if(is_const_v<remove_reference_t<T>> || !const_ )
+            return const_cast<remove_reference_t<T>*>(base_);
+        return nullptr;
+    }
+
+    template<class T, class DT = remove_reference_t<T>>
+    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && has_class_info<decay_t<T>>::value, DT*> cast() {
         if constexpr(!is_same_v<decay_t<T>, fallback_t>) {
-            if(is_const_v<remove_reference_t<T>> || !const_ )
-                return const_cast<remove_reference_t<T>*>(dynamic_cast<const remove_reference_t<T>*>(base_));
+            if(is_const_v<DT> || !const_)
+                return const_cast<DT*>(reinterpret_cast<const DT*>(base_->mm_cast(decay_t<T>::mm_class_id)));
+        } else
+            return &g_dummy_fallback;
+
+        return nullptr;
+    }
+
+    template<class T, class DT = remove_reference_t<T>>
+    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && !has_class_info<decay_t<T>>::value, DT*> cast() {
+        if constexpr(!is_same_v<decay_t<T>, fallback_t>) {
+            if(is_const_v<DT> || !const_)
+                return const_cast<DT*>(dynamic_cast<const DT*>(base_));
         } else
             return &g_dummy_fallback;
 
@@ -314,6 +383,12 @@ template<
 >
 struct arg final : S {
     arg(const fallback_t&) {}
+
+    template<class T>
+    arg(const T& v) : S(v) {}
+
+    template<class T>
+    arg(T& v) : S(v) {}
 
     template<class T>
     arg(T&& v) : S(std::forward<T>(v)) {}
