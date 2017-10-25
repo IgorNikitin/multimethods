@@ -541,6 +541,12 @@ struct compare_methods_impl<R(*)(PArgs...), R(*)(Args1...), R(*)(Args2...)> {
 };
 
 /**********************************************************************************************/
+template<class R, class... PArgs>
+struct compare_methods_impl<R(*)(PArgs...), void, void> {
+    static constexpr int value = 0;
+};
+
+/**********************************************************************************************/
 template<class P, class F1, class F2>
 struct compare_methods final : public compare_methods_impl<P, F1, F2> {
 };
@@ -829,6 +835,12 @@ struct method_6_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 
 
 /**********************************************************************************************/
+template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline
+auto make_method(bool) {
+    return nullptr;
+}
+
+/**********************************************************************************************/
 #define MM_MAKE_METHOD(N) \
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
     auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && !is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
@@ -876,7 +888,7 @@ struct method_result final : public method_result_impl<T> {
 
 
 /**********************************************************************************************/
-template<std::size_t N, class T, class... Args>
+template<std::size_t N, class T = void, class... Args>
 struct get_type_by_index {
     using type = typename get_type_by_index<N - 1, Args...>::type;
 };
@@ -897,7 +909,6 @@ struct sort_functions final {
     sort_functions( const std::tuple<bool, Funcs...>& funcs ) : funcs_(funcs) {}
 
     static constexpr int N = sizeof...(Funcs);
-    static_assert(N>0, "Expected atleast one implementation.");
     static_assert(N<65, "Too many implementations.");
 
     template<std::size_t N>
@@ -994,7 +1005,7 @@ struct sort_functions final {
         for(int i = 0 ; i < N ; ++i) {
             switch(indexes[i]) {
                 #define MM_FILL_VECTOR(I) \
-                    case I: r[i] = make_method<TP, TR, BR1, BR2, BR3, BR4, BR5, BR6, F ## I>(std::get<I < N ? I + 1 : 1>(funcs_)); break
+                    case I: r[i] = make_method<TP, TR, BR1, BR2, BR3, BR4, BR5, BR6, F ## I>(std::get<I < N ? I + 1 : 0>(funcs_)); break
 
                 MM_FILL_VECTOR(0); MM_FILL_VECTOR(1); MM_FILL_VECTOR(2); MM_FILL_VECTOR(3);
                 MM_FILL_VECTOR(4); MM_FILL_VECTOR(5); MM_FILL_VECTOR(6); MM_FILL_VECTOR(7);
