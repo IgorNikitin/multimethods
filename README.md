@@ -3,8 +3,7 @@ Multimethods for C++17
 
 ## Особливості
 
-* Підтримка неполіморфних типів;
-* бібліотека автоматичо сортує реалізації, використувачи спадкування, тип параметру та константність (типи порівнюються зліва-направо), наприклад:
+* Бібліотека автоматичо сортує реалізації, використувачи спадкування та константність (типи порівнюються зліва-направо), наприклад:
 ```C++
     void multi_method(collide, const thing&)
         match(const thing&) { cout << "base const\n"; }
@@ -80,7 +79,7 @@ struct rock : thing {};
 struct scissors : thing {};
 struct spock : thing {};
 
-void multi_method(rpsls, thing, thing)
+void multi_method(rpsls, const thing&, const thing&)
     match(lizard, paper)        { cout << "Lizard eats Paper\n"; }
     match(lizard, spock)        { cout << "Lizard poisons Spock\n"; }
     match(lizard, lizard)       { cout << "Try again\n"; }
