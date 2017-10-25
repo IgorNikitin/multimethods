@@ -387,7 +387,7 @@ constexpr bool check_types() {
     if constexpr(is_same_v<decay_t<T>, decay_t<U>>)
         return true;
     else
-        static_assert(is_polymorphic_v<decay_t<T>> && is_base_of_v<decay_t<T>, decay_t<U>>, "Implementation can extend parameter's type, but not replace it.");
+        static_assert(is_polymorphic_v<decay_t<T>> && is_base_of_v<decay_t<T>, decay_t<U>>, "Implementation can specify parameter's type, but not replace it.");
 
     return true;
 }
