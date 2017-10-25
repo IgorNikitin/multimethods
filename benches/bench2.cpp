@@ -15,13 +15,17 @@ void multi_method(collide, base&, base&)
 end_method
 
 int main() {
-   asteroid a;
-   spaceship s1, s2;
+    asteroid a;
+    spaceship s;
 
-   clock_t begin = clock();
+    clock_t begin = clock();
 
-   for(int i = 0; i < 10000000; ++i)
-       collide(s1, s2);
+    for(int i = 0; i < 250000000; ++i) {
+        collide(a, a);
+        collide(a, s);
+        collide(s, a);
+        collide(s, s);
+    }
 
     const double ms = double(clock() - begin) / CLOCKS_PER_SEC;
     printf("%f\n", ms);

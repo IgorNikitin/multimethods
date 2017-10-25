@@ -897,7 +897,7 @@ struct sort_functions final {
     sort_functions( const std::tuple<bool, Funcs...>& funcs ) : funcs_(funcs) {}
 
     static constexpr int N = sizeof...(Funcs);
-    static_assert(N>0, "Expected atleasy one implementation.");
+    static_assert(N>0, "Expected atleast one implementation.");
     static_assert(N<65, "Too many implementations.");
 
     template<std::size_t N>
