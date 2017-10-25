@@ -2,6 +2,7 @@
 // multimethods.h
 //
 // Igor Nikitin, 2017.
+// igor_nikitin@valentina-db.com
 //
 // Distributed under the Boost Software License, Version 1.0.
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -24,11 +25,11 @@
 //   end_method
 //
 #define multi_method(name, ...) \
-    mm_proto_ret_ ## name(__VA_ARGS__); \
+    mm_proto_ ## name(__VA_ARGS__); \
     namespace mm_namespace_ ## name { \
         using namespace ::multimethods::detail; \
         \
-        using proto_t        = decltype(&mm_proto_ret_ ## name); \
+        using proto_t        = decltype(&mm_proto_ ## name); \
         using proto_traits_t = function_traits<proto_t>; \
         using base1_t        = proto_traits_t::arg1_type; \
         using base2_t        = proto_traits_t::arg2_type; \
@@ -79,7 +80,7 @@
 #define match(...) , +[](__VA_ARGS__) -> ret_type_t
 
 /**********************************************************************************************/
-// Finishes definition of a multimethod.
+// Finishes definition of a method.
 //
 //   define_method(collide)
 //       match(asteroid&, asteroid&) {}
@@ -103,9 +104,9 @@
     }
 
 /**********************************************************************************************/
-// Adds fallback handler for a multimethod.
+// Adds fallback handler for a method.
 //
-//   define_method(collide, any, any)
+//   define_method(collide, thing&, thing&)
 //      fallback {}
 //
 #define fallback , +[](::multimethods::detail::fallback_t) -> ret_type_t
@@ -139,7 +140,7 @@ namespace detail {
 using namespace std;
 
 /**********************************************************************************************/
-struct fallback_t {}; // Special type to use as parameter of a fallback function (to detect it later).
+struct fallback_t {}; // Special type to use as parameter of a fallback function (to detect it in a list with implementations).
 
 /**********************************************************************************************/
 static inline fallback_t g_dummy_fallback;
@@ -152,72 +153,102 @@ template<class B>
 struct arg_poly_non_const {
     B* const base_;
 
-    // Dummy fallback constructor.
-    arg_poly_non_const(const fallback_t&)
+    // Dummy constructor for fallback.
+    arg_poly_non_const(fallback_t)
     : base_(nullptr) {
     }
 
-    // Constructs from polymorphic value - we can try to cast it to the base class,
-    // and cast to a destination class later.
-    template<class T, class = enable_if_t<is_polymorphic_v<remove_reference_t<T>> && !is_base_of_v<B, remove_reference_t<T>>>>
-    arg_poly_non_const(T&& v)
-    : base_(const_cast<B*>(dynamic_cast<const B*>(&v))) {
-    }
-
-    // Constructs from polymorphic value - we can try to cast it to the base class,
-    // and cast to a destination class later.
-    template<class T, class = enable_if_t<is_polymorphic_v<remove_reference_t<T>> && is_base_of_v<B, remove_reference_t<T>>>, class = void>
+    // Derived class - can use static_cast
+    template<class T, class = enable_if_t<is_base_of_v<B, decay_t<T>>>>
     arg_poly_non_const(T&& v)
     : base_(const_cast<B*>(static_cast<const B*>(&v))) {
     }
 
+    // Non-related type - need to use dynamic_cast
+    template<class T, class = enable_if_t<!is_base_of_v<B, decay_t<T>>>, class = void>
+    arg_poly_non_const(T&& v)
+    : base_(const_cast<B*>(dynamic_cast<const B*>(&v))) {
+    }
+
     template<class T>
     remove_reference_t<T>* cast() {
-        if constexpr(is_same_v<T, fallback_t>)
-            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
-        else
+        if constexpr(!is_same_v<decay_t<T>, fallback_t>)
             return dynamic_cast<decay_t<T>*>(base_);
+        else
+            return &g_dummy_fallback;
+    }
+};
+
+/**********************************************************************************************/
+// An argument for polymorphic and const type.
+//
+template<class B>
+struct arg_poly_const {
+    B* base_;
+    bool const_;
+
+    // Dummy constructor for fallback.
+    arg_poly_const(fallback_t)
+    : base_(nullptr)
+    , const_(false) {
+    }
+
+    // Derived class - can use static_cast
+    template<class T, class = enable_if_t<is_base_of_v<B, decay_t<T>>>>
+    arg_poly_const(T&& v)
+    : base_(static_cast<B*>(&v))
+    , const_(is_const_v<remove_reference_t<T>>) {
+    }
+
+    // Non-related type - need to use dynamic_cast
+    template<class T, class = enable_if_t<!is_base_of_v<B, decay_t<T>>>, class = void>
+    arg_poly_const(T&& v)
+    : base_(dynamic_cast<B*>(&v))
+    , const_(is_const_v<remove_reference_t<T>>) {
+    }
+
+    template<class T>
+    remove_reference_t<T>* cast() {
+        if constexpr(!is_same_v<decay_t<T>, fallback_t>) {
+            if(is_const_v<remove_reference_t<T>> || !const_ )
+                return const_cast<remove_reference_t<T>*>(dynamic_cast<const remove_reference_t<T>*>(base_));
+        } else
+            return &g_dummy_fallback;
+
         return nullptr;
     }
 };
 
 /**********************************************************************************************/
-// Class to store reference to an argument and cast it on call an implementation (polymorphic types).
+// An argument for non-polymorphic and non-const type.
 //
 template<class B>
-struct arg_poly {
-    B* base_;
-    bool const_;
+struct arg_non_poly_non_const {
+    B* p_;
 
-    // Dummy fallback constructor.
-    arg_poly(const fallback_t&)
-    : base_(nullptr)
-    , const_(false) {
+    // Dummy constructor for fallback.
+    arg_non_poly_non_const(fallback_t)
+    : p_(nullptr) {
     }
 
-    // Constructs from polymorphic value - we can try to cast it to the base class,
-    // and cast to a destination class later.
-    template<class T, class = enable_if_t<is_polymorphic_v<remove_reference_t<T>> && !is_base_of_v<B, remove_reference_t<T>>>>
-    arg_poly(T& v)
-    : base_(const_cast<B*>(dynamic_cast<const B*>(&v)))
-    , const_(is_const_v<remove_reference_t<T>>) {
+    arg_non_poly_non_const(const B& v)
+    : p_(const_cast<B*>(&v)) {
     }
 
-    // Constructs from polymorphic value - we can try to cast it to the base class,
-    // and cast to a destination class later.
-    template<class T, class = enable_if_t<is_polymorphic_v<remove_reference_t<T>> && is_base_of_v<B, remove_reference_t<T>>>, class = void>
-    arg_poly(T& v)
-    : base_(const_cast<B*>(static_cast<const B*>(&v)))
-    , const_(is_const_v<remove_reference_t<T>>) {
+    arg_non_poly_non_const(B& v)
+    : p_(&v) {
+    }
+
+    arg_non_poly_non_const(B&& v)
+    : p_(&v) {
     }
 
     template<class T>
     remove_reference_t<T>* cast() {
-        if constexpr(is_same_v<T, fallback_t>)
-            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
-        else if(is_const_v<remove_reference_t<T>> || !const_ )
-            return const_cast<remove_reference_t<T>*>(dynamic_cast<const remove_reference_t<T>*>(base_));
-        return nullptr;
+        if constexpr(!is_same_v<decay_t<T>, fallback_t>)
+            return p_;
+        else
+            return &g_dummy_fallback;
     }
 };
 
@@ -229,7 +260,7 @@ struct arg_non_poly_const {
     bool const_;
     B* p_;
 
-    // dummy fallback constructor.
+    // Dummy constructor for fallback.
     arg_non_poly_const(const fallback_t&)
     : p_(nullptr) {
     }
@@ -249,67 +280,15 @@ struct arg_non_poly_const {
     , p_(const_cast<B*>(&v)) {
     }
 
-    template<class T, class = enable_if_t<is_same_v<decay_t<B>, decay_t<T>>>>
+    template<class T>
     remove_reference_t<T>* cast() {
-        if constexpr(is_same_v<T, fallback_t>)
-            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
+        if constexpr(!is_same_v<decay_t<T>, fallback_t>) {
+            if(is_const_v<remove_reference_t<T>> || !const_ )
+                return const_cast<remove_reference_t<T>*>(p_);
+        } else
+            return &g_dummy_fallback;
 
-        if(is_const_v<remove_reference_t<T>> || !const_ )
-            return p_;
         return nullptr;
-    }
-
-    template<class T, class = enable_if_t<!is_same_v<decay_t<B>, decay_t<T>>>>
-    optional<remove_reference_t<T>> cast() {
-        if constexpr(is_same_v<T, fallback_t>)
-            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
-
-        if(is_const_v<remove_reference_t<T>> || !const_ )
-            return static_cast<remove_reference_t<T>>(*p_);
-
-        return {};
-    }
-};
-
-/**********************************************************************************************/
-// An argument for non-polymorphic and non-const type.
-// We cannot to not check constness - it must be disable by check_types.
-//
-template<class B>
-struct arg_non_poly_non_const {
-    B* p_;
-
-    // Dummy fallback constructor.
-    arg_non_poly_non_const(const fallback_t&)
-    : p_(nullptr) {
-    }
-
-    arg_non_poly_non_const(const B& v)
-    : p_(const_cast<B*>(&v)) {
-    }
-
-    arg_non_poly_non_const(B& v)
-    : p_(&v) {
-    }
-
-    arg_non_poly_non_const(B&& v)
-    : p_(&v) {
-    }
-
-    template<class T, class = enable_if_t<is_same_v<decay_t<B>, decay_t<T>>>>
-    remove_reference_t<T>* cast() {
-        if constexpr(is_same_v<T, fallback_t>)
-            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
-
-        return p_;
-    }
-
-    template<class T, class = enable_if_t<!is_same_v<decay_t<B>, decay_t<T>>>>
-    optional<remove_reference_t<T>> cast() {
-        if constexpr(is_same_v<T, fallback_t>)
-            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
-
-        return static_cast<remove_reference_t<T>>(*p_);
     }
 };
 
@@ -331,7 +310,7 @@ template<
                 is_same_v<B, void>,
                     arg_void,
                     conditional_t<is_polymorphic_v<decay_t<U>>,
-                        conditional_t<is_const_v<remove_reference_t<U>>, arg_poly<U>, arg_poly_non_const<U>>,
+                        conditional_t<is_const_v<remove_reference_t<U>>, arg_poly_const<U>, arg_poly_non_const<U>>,
                         conditional_t<is_const_v<remove_reference_t<U>>, arg_non_poly_const<U>, arg_non_poly_non_const<U>>>>
 >
 struct arg final : S {
@@ -348,7 +327,7 @@ struct arg final : S {
 };
 
 /**********************************************************************************************/
-// Exception to skip a method and try next one.
+// Exception to skip an implementation and try next one.
 //
 struct try_next final : std::exception {
     virtual const char* what() const noexcept { return "next_method"; }
