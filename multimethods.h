@@ -260,7 +260,7 @@ struct arg_non_poly_const {
     B* p_;
 
     // Dummy constructor for fallback.
-    arg_non_poly_const(const fallback_t&)
+    arg_non_poly_const(fallback_t)
     : p_(nullptr) {
     }
 
@@ -347,7 +347,7 @@ template<class T, class B = conditional_t<
     optional_ref<T>,
     optional<remove_reference_t<T>>>
 >
-struct method_ret_type : B {
+struct method_ret_type final : B {
     method_ret_type() {}
 
     template<class U>
@@ -361,7 +361,6 @@ struct method_ret_type : B {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6>
 struct abstract_method {
     using ret_t = conditional_t<is_same_v<T, void>, bool, method_ret_type<T>>;
-    virtual ~abstract_method() {}
     virtual ret_t call() { return {}; }
     virtual ret_t call(arg<B1>) { return {}; }
     virtual ret_t call(arg<B1>, arg<B2>) { return {}; }
@@ -446,7 +445,7 @@ struct check_parameters_impl<R(*)(Args...), R(*)(fallback_t)> {
 
 /**********************************************************************************************/
 template<class F1, class F2>
-struct check_parameters : public check_parameters_impl<F1, F2> {
+struct check_parameters final : public check_parameters_impl<F1, F2> {
 };
 
 
@@ -543,7 +542,7 @@ struct compare_methods_impl<R(*)(PArgs...), R(*)(Args1...), R(*)(Args2...)> {
 
 /**********************************************************************************************/
 template<class P, class F1, class F2>
-struct compare_methods : public compare_methods_impl<P, F1, F2> {
+struct compare_methods final : public compare_methods_impl<P, F1, F2> {
 };
 
 
@@ -820,19 +819,27 @@ struct method_6_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     }
 };
 
+/**********************************************************************************************/
+#undef MM_CAST_1
+#undef MM_CAST_2
+#undef MM_CAST_3
+#undef MM_CAST_4
+#undef MM_CAST_5
+#undef MM_CAST_6
+
 
 /**********************************************************************************************/
 #define MM_MAKE_METHOD(N) \
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
     auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && !is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
-        static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Implementation's parameters count mismatch."); \
+        static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Invalid count of implementation's parameters."); \
         static_assert(check_parameters<P, F>::value, "Incompatible implementation's parameters types."); \
         return new method_ ## N<T, B1, B2, B3, B4, B5, B6, F>(f); \
     } \
     \
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
     auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
-        static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Implementation's parameters count mismatch."); \
+        static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Invalid count of implementation's parameters."); \
         static_assert(check_parameters<P, F>::value, "Incompatible implementation's parameters types."); \
         return new method_ ## N ## _void<T, B1, B2, B3, B4, B5, B6, F>(f); \
     }
@@ -845,6 +852,9 @@ MM_MAKE_METHOD(3)
 MM_MAKE_METHOD(4)
 MM_MAKE_METHOD(5)
 MM_MAKE_METHOD(6)
+
+/**********************************************************************************************/
+#undef MM_MAKE_METHOD
 
 
 /**********************************************************************************************/
@@ -861,7 +871,7 @@ struct method_result_impl<void> {
 
 /**********************************************************************************************/
 template<class T>
-struct method_result : public method_result_impl<T> {
+struct method_result final : public method_result_impl<T> {
 };
 
 
@@ -879,13 +889,16 @@ struct get_type_by_index<0, T, Args...> {
 
 
 /**********************************************************************************************/
+// Helper class to sort implementations by using of inheritance and constness.
+//
 template<class... Funcs>
-struct sort_functions {
+struct sort_functions final {
     const std::tuple<bool, Funcs...>& funcs_;
     sort_functions( const std::tuple<bool, Funcs...>& funcs ) : funcs_(funcs) {}
 
     static constexpr int N = sizeof...(Funcs);
     static_assert(N>0, "Expected atleasy one implementation.");
+    static_assert(N<65, "Too many implementations.");
 
     template<std::size_t N>
     using func_type_t = typename get_type_by_index<N, Funcs...>::type;
@@ -909,7 +922,6 @@ struct sort_functions {
     MM_FUNC_TYPE(52); MM_FUNC_TYPE(53); MM_FUNC_TYPE(54); MM_FUNC_TYPE(55);
     MM_FUNC_TYPE(56); MM_FUNC_TYPE(57); MM_FUNC_TYPE(58); MM_FUNC_TYPE(59);
     MM_FUNC_TYPE(60); MM_FUNC_TYPE(61); MM_FUNC_TYPE(62); MM_FUNC_TYPE(63);
-    MM_FUNC_TYPE(64);
 
     #undef MM_FUNC_TYPE
 
@@ -935,7 +947,6 @@ struct sort_functions {
         MM_CASE_B(52); MM_CASE_B(53); MM_CASE_B(54); MM_CASE_B(55);
         MM_CASE_B(56); MM_CASE_B(57); MM_CASE_B(58); MM_CASE_B(59);
         MM_CASE_B(60); MM_CASE_B(61); MM_CASE_B(62); MM_CASE_B(63);
-        MM_CASE_B(64);
 
         #undef MM_CASE_B
 
@@ -950,7 +961,7 @@ struct sort_functions {
         for(int i = 0 ; i < N ; ++i)
             indexes[i] = i;
 
-        // Use quick-sort to sort methods by types and it's constness
+        // Use quick-sort to sort implementations
         std::sort(indexes, indexes + N, [](int a, int b) {
             #define MM_CASE_A(I) \
                 if(a == I) return sort_functions::pred_b<TP, F ## I>(b)
@@ -971,14 +982,13 @@ struct sort_functions {
             MM_CASE_A(52); MM_CASE_A(53); MM_CASE_A(54); MM_CASE_A(55);
             MM_CASE_A(56); MM_CASE_A(57); MM_CASE_A(58); MM_CASE_A(59);
             MM_CASE_A(60); MM_CASE_A(61); MM_CASE_A(62); MM_CASE_A(63);
-            MM_CASE_A(64);
 
             #undef MM_CASE_A
 
             return a < b;
         } );
 
-        // Create and fill vector with methods
+        // Create and fill vector with implementations
         std::vector<abstract_method<TR, BR1, BR2, BR3, BR4, BR5, BR6>*> r(N);
 
         for(int i = 0 ; i < N ; ++i) {
@@ -1002,7 +1012,6 @@ struct sort_functions {
                 MM_FILL_VECTOR(52); MM_FILL_VECTOR(53); MM_FILL_VECTOR(54); MM_FILL_VECTOR(55);
                 MM_FILL_VECTOR(56); MM_FILL_VECTOR(57); MM_FILL_VECTOR(58); MM_FILL_VECTOR(59);
                 MM_FILL_VECTOR(60); MM_FILL_VECTOR(61); MM_FILL_VECTOR(62); MM_FILL_VECTOR(63);
-                MM_FILL_VECTOR(64);
 
                 #undef MM_FILL_VECTOR
 
