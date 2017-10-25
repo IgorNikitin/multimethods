@@ -80,22 +80,22 @@ struct scissors : thing {};
 struct spock : thing {};
 
 void multi_method(rpsls, const thing&, const thing&)
-    match(lizard, paper)        { cout << "Lizard eats Paper\n"; }
-    match(lizard, spock)        { cout << "Lizard poisons Spock\n"; }
-    match(lizard, lizard)       { cout << "Try again\n"; }
-    match(rock, lizard)         { cout << "Rock crushes Lizard\n"; }
-    match(rock, scissors)       { cout << "Rock crushes Scissors\n"; }
-    match(rock, rock)           { cout << "Try again\n"; }
-    match(paper, rock)          { cout << "Paper covers Rock\n"; }
-    match(paper, spock)         { cout << "Paper disproves Spock\n"; }
-    match(paper, paper)         { cout << "Try again\n"; }
-    match(scissors, lizard)     { cout << "Scissors decapitates Lizard\n"; }
-    match(scissors, paper)      { cout << "Scissors cuts Paper\n"; }
-    match(scissors, scissors)   { cout << "Try again\n"; }
-    match(spock, rock)          { cout << "Spock vaporizes Rock\n"; }
-    match(spock, scissors)      { cout << "Spock smashes Scissors\n"; }
-    match(spock, spock)         { cout << "Try again\n"; }
-    match(thing& t1, thing& t2) { rpsls(t2, t1); }
+    match(const lizard&, const paper&)      { cout << "Lizard eats Paper\n"; }
+    match(const lizard&, const spock&)      { cout << "Lizard poisons Spock\n"; }
+    match(const lizard&, const lizard&)     { cout << "Try again\n"; }
+    match(const rock&, const lizard&)       { cout << "Rock crushes Lizard\n"; }
+    match(const rock&, const scissors&)     { cout << "Rock crushes Scissors\n"; }
+    match(const rock&, const rock&)         { cout << "Try again\n"; }
+    match(const paper&, const rock&)        { cout << "Paper covers Rock\n"; }
+    match(const paper&, const spock&)       { cout << "Paper disproves Spock\n"; }
+    match(const paper&, const paper&)       { cout << "Try again\n"; }
+    match(const scissors&, const lizard&)   { cout << "Scissors decapitates Lizard\n"; }
+    match(const scissors&, const paper&)    { cout << "Scissors cuts Paper\n"; }
+    match(const scissors&, const scissors&) { cout << "Try again\n"; }
+    match(const spock&, const rock&)        { cout << "Spock vaporizes Rock\n"; }
+    match(const spock&, const scissors&)    { cout << "Spock smashes Scissors\n"; }
+    match(const spock&, const spock&)       { cout << "Try again\n"; }
+    match(const thing& t1, const thing& t2) { rpsls(t2, t1); }
 end_method
 
 struct shape { virtual ~shape() {} };
