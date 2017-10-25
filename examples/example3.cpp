@@ -10,7 +10,6 @@ base& multi_method(print, base&)
     match(derived& d) { cout << "derived\n"; return d; }
 end_method
 
-
 int main() {
     base b;
     derived d;

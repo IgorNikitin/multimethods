@@ -316,12 +316,6 @@ struct arg final : S {
     arg(const fallback_t&) {}
 
     template<class T>
-    arg(T& v) : S(v) {}
-
-    template<class T>
-    arg(const T& v) : S(v) {}
-
-    template<class T>
     arg(T&& v) : S(std::forward<T>(v)) {}
 };
 
@@ -478,7 +472,7 @@ constexpr int compare_types() {
     using TD = decay_t<T>;
     using UD = decay_t<U>;
 
-    // The same types - check constness
+    // The same types - just check constness
     if constexpr(is_same_v<TD, UD>) {
         if constexpr(is_const_v<remove_reference_t<T>>)
             return is_const_v<remove_reference_t<U>> ? 0 : 1;
@@ -487,20 +481,11 @@ constexpr int compare_types() {
 
         return 0;
     } else {
-        // Prefer original type (for example 'int: int + double')
-        if constexpr(!is_polymorphic_v<BD>) {
-            if constexpr(is_same_v<BD, TD>) {
-                if(!is_same_v<BD, UD>)
-                    return -1;
-            } else if(is_same_v<BD, UD>)
-                return 1;
-        } else {
-            // Prefer derived classes
-            if constexpr (is_base_of_v<decay_t<T>, decay_t<U>>)
-                return 1;
-            else if constexpr(is_base_of_v<decay_t<U>, decay_t<T>>)
-                return -1;
-        }
+        // Prefer derived classes
+        if constexpr (is_base_of_v<decay_t<T>, decay_t<U>>)
+            return 1;
+        else if constexpr(is_base_of_v<decay_t<U>, decay_t<T>>)
+            return -1;
     }
 
     return 0;
@@ -553,11 +538,7 @@ struct compare_methods_impl;
 /**********************************************************************************************/
 template<class R, class... PArgs, class... Args1, class... Args2>
 struct compare_methods_impl<R(*)(PArgs...), R(*)(Args1...), R(*)(Args2...)> {
-    static constexpr int value = sizeof...(Args1) < sizeof...(Args2)
-        ? -1
-        : sizeof...(Args1) > sizeof...(Args2)
-          ? 1
-          : compare_types<PArgs..., Args1..., Args2...>();
+    static constexpr int value = compare_types<PArgs..., Args1..., Args2...>();
 };
 
 /**********************************************************************************************/
@@ -920,7 +901,15 @@ struct sort_functions {
     MM_FUNC_TYPE(20); MM_FUNC_TYPE(21); MM_FUNC_TYPE(22); MM_FUNC_TYPE(23);
     MM_FUNC_TYPE(24); MM_FUNC_TYPE(25); MM_FUNC_TYPE(26); MM_FUNC_TYPE(27);
     MM_FUNC_TYPE(28); MM_FUNC_TYPE(29); MM_FUNC_TYPE(30); MM_FUNC_TYPE(31);
-    MM_FUNC_TYPE(32);
+    MM_FUNC_TYPE(32); MM_FUNC_TYPE(33); MM_FUNC_TYPE(34); MM_FUNC_TYPE(35);
+    MM_FUNC_TYPE(36); MM_FUNC_TYPE(37); MM_FUNC_TYPE(38); MM_FUNC_TYPE(39);
+    MM_FUNC_TYPE(40); MM_FUNC_TYPE(41); MM_FUNC_TYPE(42); MM_FUNC_TYPE(43);
+    MM_FUNC_TYPE(44); MM_FUNC_TYPE(45); MM_FUNC_TYPE(46); MM_FUNC_TYPE(47);
+    MM_FUNC_TYPE(48); MM_FUNC_TYPE(49); MM_FUNC_TYPE(50); MM_FUNC_TYPE(51);
+    MM_FUNC_TYPE(52); MM_FUNC_TYPE(53); MM_FUNC_TYPE(54); MM_FUNC_TYPE(55);
+    MM_FUNC_TYPE(56); MM_FUNC_TYPE(57); MM_FUNC_TYPE(58); MM_FUNC_TYPE(59);
+    MM_FUNC_TYPE(60); MM_FUNC_TYPE(61); MM_FUNC_TYPE(62); MM_FUNC_TYPE(63);
+    MM_FUNC_TYPE(64);
 
     #undef MM_FUNC_TYPE
 
@@ -938,7 +927,15 @@ struct sort_functions {
         MM_CASE_B(20); MM_CASE_B(21); MM_CASE_B(22); MM_CASE_B(23);
         MM_CASE_B(24); MM_CASE_B(25); MM_CASE_B(26); MM_CASE_B(27);
         MM_CASE_B(28); MM_CASE_B(29); MM_CASE_B(30); MM_CASE_B(31);
-        MM_CASE_B(32);
+        MM_CASE_B(32); MM_CASE_B(33); MM_CASE_B(34); MM_CASE_B(35);
+        MM_CASE_B(36); MM_CASE_B(37); MM_CASE_B(38); MM_CASE_B(39);
+        MM_CASE_B(40); MM_CASE_B(41); MM_CASE_B(42); MM_CASE_B(43);
+        MM_CASE_B(44); MM_CASE_B(45); MM_CASE_B(46); MM_CASE_B(47);
+        MM_CASE_B(48); MM_CASE_B(49); MM_CASE_B(50); MM_CASE_B(51);
+        MM_CASE_B(52); MM_CASE_B(53); MM_CASE_B(54); MM_CASE_B(55);
+        MM_CASE_B(56); MM_CASE_B(57); MM_CASE_B(58); MM_CASE_B(59);
+        MM_CASE_B(60); MM_CASE_B(61); MM_CASE_B(62); MM_CASE_B(63);
+        MM_CASE_B(64);
 
         #undef MM_CASE_B
 
@@ -966,11 +963,19 @@ struct sort_functions {
             MM_CASE_A(20); MM_CASE_A(21); MM_CASE_A(22); MM_CASE_A(23);
             MM_CASE_A(24); MM_CASE_A(25); MM_CASE_A(26); MM_CASE_A(27);
             MM_CASE_A(28); MM_CASE_A(29); MM_CASE_A(30); MM_CASE_A(31);
-            MM_CASE_A(32);
+            MM_CASE_A(32); MM_CASE_A(33); MM_CASE_A(34); MM_CASE_A(35);
+            MM_CASE_A(36); MM_CASE_A(37); MM_CASE_A(38); MM_CASE_A(39);
+            MM_CASE_A(40); MM_CASE_A(41); MM_CASE_A(42); MM_CASE_A(43);
+            MM_CASE_A(44); MM_CASE_A(45); MM_CASE_A(46); MM_CASE_A(47);
+            MM_CASE_A(48); MM_CASE_A(49); MM_CASE_A(50); MM_CASE_A(51);
+            MM_CASE_A(52); MM_CASE_A(53); MM_CASE_A(54); MM_CASE_A(55);
+            MM_CASE_A(56); MM_CASE_A(57); MM_CASE_A(58); MM_CASE_A(59);
+            MM_CASE_A(60); MM_CASE_A(61); MM_CASE_A(62); MM_CASE_A(63);
+            MM_CASE_A(64);
 
             #undef MM_CASE_A
 
-            return a<b;
+            return a < b;
         } );
 
         // Create and fill vector with methods
@@ -989,7 +994,15 @@ struct sort_functions {
                 MM_FILL_VECTOR(20); MM_FILL_VECTOR(21); MM_FILL_VECTOR(22); MM_FILL_VECTOR(23);
                 MM_FILL_VECTOR(24); MM_FILL_VECTOR(25); MM_FILL_VECTOR(26); MM_FILL_VECTOR(27);
                 MM_FILL_VECTOR(28); MM_FILL_VECTOR(29); MM_FILL_VECTOR(30); MM_FILL_VECTOR(31);
-                MM_FILL_VECTOR(32);
+                MM_FILL_VECTOR(32); MM_FILL_VECTOR(33); MM_FILL_VECTOR(34); MM_FILL_VECTOR(35);
+                MM_FILL_VECTOR(36); MM_FILL_VECTOR(37); MM_FILL_VECTOR(38); MM_FILL_VECTOR(39);
+                MM_FILL_VECTOR(40); MM_FILL_VECTOR(41); MM_FILL_VECTOR(42); MM_FILL_VECTOR(43);
+                MM_FILL_VECTOR(44); MM_FILL_VECTOR(45); MM_FILL_VECTOR(46); MM_FILL_VECTOR(47);
+                MM_FILL_VECTOR(48); MM_FILL_VECTOR(49); MM_FILL_VECTOR(50); MM_FILL_VECTOR(51);
+                MM_FILL_VECTOR(52); MM_FILL_VECTOR(53); MM_FILL_VECTOR(54); MM_FILL_VECTOR(55);
+                MM_FILL_VECTOR(56); MM_FILL_VECTOR(57); MM_FILL_VECTOR(58); MM_FILL_VECTOR(59);
+                MM_FILL_VECTOR(60); MM_FILL_VECTOR(61); MM_FILL_VECTOR(62); MM_FILL_VECTOR(63);
+                MM_FILL_VECTOR(64);
 
                 #undef MM_FILL_VECTOR
 
