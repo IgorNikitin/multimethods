@@ -40,21 +40,134 @@
         using method_t       = abstract_method<ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>; \
         \
         static constexpr int MM_MAX_IMPLEMENTATIONS = 64; \
+        static constexpr int arity = proto_traits_t::arity; \
         \
         static inline method_t* g_fallback { nullptr }; \
         static inline method_t* g_impls[MM_MAX_IMPLEMENTATIONS]; \
         static inline method_t** g_impls_end { g_impls }; \
     }; \
     \
-    template<class... Args> inline \
-    enable_if_t<std::is_invocable_v<mm_namespace_ ## name::proto_t, Args...>, mm_namespace_ ## name::ret_type_t> \
-    name(Args&&... args) { \
+    inline mm_namespace_ ## name::ret_type_t name() { \
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
         \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(args...)) \
+                if(auto r = (*m)->call()) \
+                    return method_result<ret_type_t>::unwrap(r); \
+            } catch(try_next&) { \
+            } \
+        \
+        if(g_fallback) { \
+            if(auto r = g_fallback->call(g_dummy_fallback)) \
+                return method_result<ret_type_t>::unwrap(r); \
+        } \
+        \
+        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+    } \
+    \
+    inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1) { \
+        using namespace ::multimethods::detail; \
+        using namespace mm_namespace_ ## name; \
+        \
+        for(auto m = g_impls ; m != g_impls_end ; ++m) \
+            try { \
+                if(auto r = (*m)->call(p1)) \
+                    return method_result<ret_type_t>::unwrap(r); \
+            } catch(try_next&) { \
+            } \
+        \
+        if(g_fallback) { \
+            if(auto r = g_fallback->call(g_dummy_fallback)) \
+                return method_result<ret_type_t>::unwrap(r); \
+        } \
+        \
+        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+    } \
+    \
+    inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2) { \
+        using namespace ::multimethods::detail; \
+        using namespace mm_namespace_ ## name; \
+        \
+        for(auto m = g_impls ; m != g_impls_end ; ++m) \
+            try { \
+                if(auto r = (*m)->call(p1, p2)) \
+                    return method_result<ret_type_t>::unwrap(r); \
+            } catch(try_next&) { \
+            } \
+        \
+        if(g_fallback) { \
+            if(auto r = g_fallback->call(g_dummy_fallback)) \
+                return method_result<ret_type_t>::unwrap(r); \
+        } \
+        \
+        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+    } \
+    \
+    inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2, mm_namespace_ ## name::base3_t p3) { \
+        using namespace ::multimethods::detail; \
+        using namespace mm_namespace_ ## name; \
+        \
+        for(auto m = g_impls ; m != g_impls_end ; ++m) \
+            try { \
+                if(auto r = (*m)->call(p1, p2, p3)) \
+                    return method_result<ret_type_t>::unwrap(r); \
+            } catch(try_next&) { \
+            } \
+        \
+        if(g_fallback) { \
+            if(auto r = g_fallback->call(g_dummy_fallback)) \
+                return method_result<ret_type_t>::unwrap(r); \
+        } \
+        \
+        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+    } \
+    \
+    inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2, mm_namespace_ ## name::base3_t p3, mm_namespace_ ## name::base4_t p4) { \
+        using namespace ::multimethods::detail; \
+        using namespace mm_namespace_ ## name; \
+        \
+        for(auto m = g_impls ; m != g_impls_end ; ++m) \
+            try { \
+                if(auto r = (*m)->call(p1, p2, p3, p4)) \
+                    return method_result<ret_type_t>::unwrap(r); \
+            } catch(try_next&) { \
+            } \
+        \
+        if(g_fallback) { \
+            if(auto r = g_fallback->call(g_dummy_fallback)) \
+                return method_result<ret_type_t>::unwrap(r); \
+        } \
+        \
+        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+    } \
+    \
+    inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2, mm_namespace_ ## name::base3_t p3, mm_namespace_ ## name::base4_t p4, mm_namespace_ ## name::base5_t p5) { \
+        using namespace ::multimethods::detail; \
+        using namespace mm_namespace_ ## name; \
+        \
+        for(auto m = g_impls ; m != g_impls_end ; ++m) \
+            try { \
+                if(auto r = (*m)->call(p1, p2, p3, p4, p5)) \
+                    return method_result<ret_type_t>::unwrap(r); \
+            } catch(try_next&) { \
+            } \
+        \
+        if(g_fallback) { \
+            if(auto r = g_fallback->call(g_dummy_fallback)) \
+                return method_result<ret_type_t>::unwrap(r); \
+        } \
+        \
+        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+    } \
+    \
+    inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2, mm_namespace_ ## name::base3_t p3, mm_namespace_ ## name::base4_t p4, mm_namespace_ ## name::base5_t p5, mm_namespace_ ## name::base6_t p6) { \
+        using namespace ::multimethods::detail; \
+        using namespace mm_namespace_ ## name; \
+        \
+        for(auto m = g_impls ; m != g_impls_end ; ++m) \
+            try { \
+                if(auto r = (*m)->call(p1, p2, p3, p4, p5, p6)) \
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
@@ -153,6 +266,7 @@ using namespace std;
 
 /**********************************************************************************************/
 struct fallback_t {}; // Special type to use as parameter of a fallback function (to detect it in a list with implementations).
+struct none_t {}; // Special type to mark non-used parameters.
 
 /**********************************************************************************************/
 static inline fallback_t g_dummy_fallback;
@@ -307,10 +421,6 @@ struct arg_non_poly_non_const {
     : p_(&v) {
     }
 
-    arg_non_poly_non_const(B&& v)
-    : p_(&v) {
-    }
-
     template<class T>
     remove_reference_t<T>* cast() {
         if constexpr(!is_same_v<decay_t<T>, fallback_t>)
@@ -336,11 +446,6 @@ struct arg_non_poly_const {
     arg_non_poly_const(B& v)
     : const_(false)
     , p_(const_cast<B*>(&v)) {
-    }
-
-    arg_non_poly_const(B&& v)
-    : const_(false)
-    , p_(&v) {
     }
 
     arg_non_poly_const(const B& v)
@@ -636,12 +741,12 @@ template<class R>
 struct function_traits_impl<R(*)()> {
     enum { arity = 0 };
     using ret_type = R;
-    using arg1_type = void;
-    using arg2_type = void;
-    using arg3_type = void;
-    using arg4_type = void;
-    using arg5_type = void;
-    using arg6_type = void;
+    using arg1_type = none_t;
+    using arg2_type = none_t;
+    using arg3_type = none_t;
+    using arg4_type = none_t;
+    using arg5_type = none_t;
+    using arg6_type = none_t;
 };
 
 /**********************************************************************************************/
@@ -650,11 +755,11 @@ struct function_traits_impl<R(*)(T1)> {
     enum { arity = 1 };
     using ret_type = R;
     using arg1_type = T1;
-    using arg2_type = void;
-    using arg3_type = void;
-    using arg4_type = void;
-    using arg5_type = void;
-    using arg6_type = void;
+    using arg2_type = none_t;
+    using arg3_type = none_t;
+    using arg4_type = none_t;
+    using arg5_type = none_t;
+    using arg6_type = none_t;
 };
 
 /**********************************************************************************************/
@@ -664,10 +769,10 @@ struct function_traits_impl<R(*)(T1, T2)> {
     using ret_type = R;
     using arg1_type = T1;
     using arg2_type = T2;
-    using arg3_type = void;
-    using arg4_type = void;
-    using arg5_type = void;
-    using arg6_type = void;
+    using arg3_type = none_t;
+    using arg4_type = none_t;
+    using arg5_type = none_t;
+    using arg6_type = none_t;
 };
 
 /**********************************************************************************************/
@@ -678,9 +783,9 @@ struct function_traits_impl<R(*)(T1, T2, T3)> {
     using arg1_type = T1;
     using arg2_type = T2;
     using arg3_type = T3;
-    using arg4_type = void;
-    using arg5_type = void;
-    using arg6_type = void;
+    using arg4_type = none_t;
+    using arg5_type = none_t;
+    using arg6_type = none_t;
 };
 
 /**********************************************************************************************/
@@ -692,8 +797,8 @@ struct function_traits_impl<R(*)(T1, T2, T3, T4)> {
     using arg2_type = T2;
     using arg3_type = T3;
     using arg4_type = T4;
-    using arg5_type = void;
-    using arg6_type = void;
+    using arg5_type = none_t;
+    using arg6_type = none_t;
 };
 
 template<class R, class T1, class T2, class T3, class T4, class T5>
@@ -705,7 +810,7 @@ struct function_traits_impl<R(*)(T1, T2, T3, T4, T5)> {
     using arg3_type = T3;
     using arg4_type = T4;
     using arg5_type = T5;
-    using arg6_type = void;
+    using arg6_type = none_t;
 };
 
 template<class R, class T1, class T2, class T3, class T4, class T5, class T6>
