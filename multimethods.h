@@ -462,7 +462,8 @@ template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, c
 /**********************************************************************************************/
 template<class T, class U>
 constexpr bool check_types() {
-    static_assert(is_const_v<remove_reference_t<T>> == is_const_v<remove_reference_t<U>>, "Implementation cannot change constness of parameters.");
+    static_assert(is_reference_v<T> == is_reference_v<U>, "Implementation cannot add/remove reference to a parameter's type.");
+    static_assert(is_const_v<remove_reference_t<T>> == is_const_v<remove_reference_t<U>>, "Implementation cannot add/remove const to a parameter's type.");
 
     if constexpr(is_same_v<decay_t<T>, decay_t<U>>)
         return true;
