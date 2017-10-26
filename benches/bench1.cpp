@@ -7,11 +7,11 @@ struct thing { MM_CLASS() virtual ~thing() {} };
 struct asteroid final : thing { MM_CLASS(thing) };
 struct spaceship final : thing { MM_CLASS(thing) };
 
-void multi_method(collide, const thing&, const thing&)
-    match(const asteroid&, const asteroid&) {}
-    match(const asteroid&, const spaceship&) {}
-    match(const spaceship&, const asteroid&) {}
-    match(const spaceship&, const spaceship&) {}
+void multi_method(collide, thing&, thing&)
+    match(asteroid&, asteroid&) {}
+    match(asteroid&, spaceship&) {}
+    match(spaceship&, asteroid&) {}
+    match(spaceship&, spaceship&) {}
 end_method
 
 int main() {

@@ -47,6 +47,7 @@
         static inline method_t** g_impls_end { g_impls }; \
     }; \
     \
+    template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 0>> \
     inline mm_namespace_ ## name::ret_type_t name() { \
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
@@ -66,6 +67,7 @@
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
+    template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 1>> \
     inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1) { \
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
@@ -85,6 +87,7 @@
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
+    template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 2>> \
     inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2) { \
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
@@ -104,6 +107,7 @@
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
+    template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 3>> \
     inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2, mm_namespace_ ## name::base3_t p3) { \
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
@@ -123,6 +127,7 @@
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
+    template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 4>> \
     inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2, mm_namespace_ ## name::base3_t p3, mm_namespace_ ## name::base4_t p4) { \
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
@@ -142,6 +147,7 @@
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
+    template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 5>> \
     inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2, mm_namespace_ ## name::base3_t p3, mm_namespace_ ## name::base4_t p4, mm_namespace_ ## name::base5_t p5) { \
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
@@ -161,6 +167,7 @@
         throw ::multimethods::not_implemented(#name ": not_implemented."); \
     } \
     \
+    template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 6>> \
     inline mm_namespace_ ## name::ret_type_t name(mm_namespace_ ## name::base1_t p1, mm_namespace_ ## name::base2_t p2, mm_namespace_ ## name::base3_t p3, mm_namespace_ ## name::base4_t p4, mm_namespace_ ## name::base5_t p5, mm_namespace_ ## name::base6_t p6) { \
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
