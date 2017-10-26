@@ -542,22 +542,15 @@ struct check_parameters final : public check_parameters_impl<F1, F2> {
 /**********************************************************************************************/
 template<class... Args> constexpr enable_if_t<sizeof...(Args) == 0, int> compare_types() { return 0; }
 template<class> constexpr int compare_types() { return 0; }
-template<class, class> constexpr int compare_types() { return 0; }
-template<class, class, class, class> constexpr int compare_types() { return 0; }
+template<class, class, class> constexpr int compare_types() { return 0; }
 template<class, class, class, class, class> constexpr int compare_types() { return 0; }
 template<class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
-template<class, class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
-template<class, class, class, class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
+template<class, class, class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
 template<class, class, class, class, class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
-template<class, class, class, class, class, class, class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
-template<class, class, class, class, class, class, class, class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
-template<class, class, class, class, class, class, class, class, class, class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
-template<class, class, class, class, class, class, class, class, class, class, class, class, class, class, class, class, class> constexpr int compare_types() { return 0; }
 
 /**********************************************************************************************/
-template<class B, class T, class U>
+template<class T, class U>
 constexpr int compare_types() {
-    using BD = decay_t<B>;
     using TD = decay_t<T>;
     using UD = decay_t<U>;
 
@@ -576,64 +569,64 @@ constexpr int compare_types() {
 }
 
 /**********************************************************************************************/
-template<class B1, class B2, class T1, class T2, class U1, class U2>
-constexpr int compare_types() {
-    if(constexpr int r = compare_types<B1, T1, U1>() )
-        return r;
-    return compare_types<B2, T2, U2>();
-}
-
-/**********************************************************************************************/
-template<class B1, class B2, class B3, class T1, class T2, class T3, class U1, class U2, class U3>
-constexpr int compare_types() {
-    if(constexpr int r = compare_types<B1, T1, U1>() )
-        return r;
-    return compare_types<B2, B3, T2, T3, U2, U3>();
-}
-
-/**********************************************************************************************/
-template<class B1, class B2, class B3, class B4, class T1, class T2, class T3, class T4, class U1, class U2, class U3, class U4>
+template<class T1, class T2, class U1, class U2>
 constexpr int compare_types() {
     if(constexpr int r = compare_types<T1, U1>() )
         return r;
-    return compare_types<B2, B3, B4, T2, T3, T4, U2, U3, U4>();
+    return compare_types<T2, U2>();
 }
 
 /**********************************************************************************************/
-template<class B1, class B2, class B3, class B4, class B5, class T1, class T2, class T3, class T4, class T5, class U1, class U2, class U3, class U4, class U5>
+template<class T1, class T2, class T3, class U1, class U2, class U3>
 constexpr int compare_types() {
     if(constexpr int r = compare_types<T1, U1>() )
         return r;
-    return compare_types<B2, B3, B4, B5, T2, T3, T4, T5, U2, U3, U4, U5>();
+    return compare_types<T2, T3, U2, U3>();
 }
 
 /**********************************************************************************************/
-template<class B1, class B2, class B3, class B4, class B5, class B6, class T1, class T2, class T3, class T4, class T5, class T6, class U1, class U2, class U3, class U4, class U5, class U6>
+template<class T1, class T2, class T3, class T4, class U1, class U2, class U3, class U4>
 constexpr int compare_types() {
     if(constexpr int r = compare_types<T1, U1>() )
         return r;
-    return compare_types<B2, B3, B4, B5, B6, T2, T3, T4, T5, T6, U2, U3, U4, U5, U6>();
+    return compare_types<T2, T3, T4, U2, U3, U4>();
 }
 
 /**********************************************************************************************/
-template<class P, class F1, class F2>
+template<class T1, class T2, class T3, class T4, class T5, class U1, class U2, class U3, class U4, class U5>
+constexpr int compare_types() {
+    if(constexpr int r = compare_types<T1, U1>() )
+        return r;
+    return compare_types<T2, T3, T4, T5, U2, U3, U4, U5>();
+}
+
+/**********************************************************************************************/
+template<class T1, class T2, class T3, class T4, class T5, class T6, class U1, class U2, class U3, class U4, class U5, class U6>
+constexpr int compare_types() {
+    if(constexpr int r = compare_types<T1, U1>() )
+        return r;
+    return compare_types<T2, T3, T4, T5, T6, U2, U3, U4, U5, U6>();
+}
+
+/**********************************************************************************************/
+template<class F1, class F2>
 struct compare_methods_impl;
 
 /**********************************************************************************************/
-template<class R, class... PArgs, class... Args1, class... Args2>
-struct compare_methods_impl<R(*)(PArgs...), R(*)(Args1...), R(*)(Args2...)> {
-    static constexpr int value = compare_types<PArgs..., Args1..., Args2...>();
+template<class R, class... Args1, class... Args2>
+struct compare_methods_impl<R(*)(Args1...), R(*)(Args2...)> {
+    static constexpr int value = compare_types<Args1..., Args2...>();
 };
 
 /**********************************************************************************************/
-template<class R, class... PArgs>
-struct compare_methods_impl<R(*)(PArgs...), void, void> {
+template<>
+struct compare_methods_impl<void, void> {
     static constexpr int value = 0;
 };
 
 /**********************************************************************************************/
-template<class P, class F1, class F2>
-struct compare_methods final : public compare_methods_impl<P, F1, F2> {
+template<class F1, class F2>
+struct compare_methods final : public compare_methods_impl<F1, F2> {
 };
 
 
@@ -986,7 +979,7 @@ struct get_type_by_index<0, T, Args...> {
 
 
 /**********************************************************************************************/
-// Helper class to sort implementations by using of inheritance and constness.
+// Helper class to sort implementations using inheritance.
 //
 template<class... Funcs>
 struct sort_functions final {
@@ -994,7 +987,7 @@ struct sort_functions final {
     sort_functions( const std::tuple<bool, Funcs...>& funcs ) : funcs_(funcs) {}
 
     static constexpr int N = sizeof...(Funcs);
-    static_assert(N<65, "Too many implementations.");
+    static_assert(N < 65, "Too many implementations.");
 
     template<std::size_t N>
     using func_type_t = typename get_type_by_index<N, Funcs...>::type;
@@ -1022,10 +1015,10 @@ struct sort_functions final {
     #undef MM_FUNC_TYPE
 
     // Predicate function to sort methods
-    template<class P, class A>
+    template<class A>
     static constexpr bool pred_b(int b) {
         #define MM_CASE_B(I) \
-            if(b == I) return compare_methods<P, A, F ## I>::value < 0;
+            if(b == I) return compare_methods<A, F ## I>::value < 0;
 
         MM_CASE_B(0); MM_CASE_B(1); MM_CASE_B(2); MM_CASE_B(3);
         MM_CASE_B(4); MM_CASE_B(5); MM_CASE_B(6); MM_CASE_B(7);
@@ -1060,7 +1053,7 @@ struct sort_functions final {
         // Use quick-sort to sort implementations
         std::sort(indexes, indexes + N, [](int a, int b) {
             #define MM_CASE_A(I) \
-                if(a == I) return sort_functions::pred_b<TP, F ## I>(b)
+                if(a == I) return sort_functions::pred_b<F ## I>(b)
 
             MM_CASE_A(0); MM_CASE_A(1); MM_CASE_A(2); MM_CASE_A(3);
             MM_CASE_A(4); MM_CASE_A(5); MM_CASE_A(6); MM_CASE_A(7);
@@ -1124,7 +1117,7 @@ struct sort_functions final {
 } }
 
 /**********************************************************************************************/
-// Helper macros for 'define_method' macro.
+// Helper macros for 'multi_method' macro.
 //
 #define MM_JOIN(x, y) MM_JOIN_AGAIN(x, y)
 #define MM_JOIN_AGAIN(x, y) x ## y
