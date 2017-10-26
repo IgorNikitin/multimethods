@@ -316,16 +316,9 @@ struct arg_poly {
     : base_(nullptr) {
     }
 
-    // Derived class - can use static_cast
-    template<class T, class = enable_if_t<is_base_of_v<decay_t<B>, decay_t<T>>>>
+    template<class T>
     arg_poly(T&& v)
     : base_(const_cast<B*>(static_cast<const B*>(&v))) {
-    }
-
-    // Non-related type - need to use dynamic_cast
-    template<class T, class = enable_if_t<!is_base_of_v<decay_t<B>, decay_t<T>>>, class = void>
-    arg_poly(T&& v)
-    : base_(const_cast<B*>(dynamic_cast<const B*>(&v))) {
     }
 
     template<class T>
@@ -362,12 +355,9 @@ struct arg_non_poly {
     : p_(nullptr) {
     }
 
+    // Constructs from value
     arg_non_poly(const B& v)
     : p_(const_cast<B*>(&v)) {
-    }
-
-    arg_non_poly(B& v)
-    : p_(&v) {
     }
 
     template<class T>
@@ -555,15 +545,13 @@ constexpr int compare_types() {
     using UD = decay_t<U>;
 
     // The same types - just check constness
-    if constexpr(is_same_v<TD, UD>) {
+    if constexpr(is_same_v<TD, UD>)
         return 0;
-    } else {
-        // Prefer derived classes
-        if constexpr (is_base_of_v<decay_t<T>, decay_t<U>>)
-            return 1;
-        else if constexpr(is_base_of_v<decay_t<U>, decay_t<T>>)
-            return -1;
-    }
+    // Prefer derived classes
+    else if constexpr (is_base_of_v<decay_t<T>, decay_t<U>>)
+        return 1;
+    else if constexpr(is_base_of_v<decay_t<U>, decay_t<T>>)
+        return -1;
 
     return 0;
 }
