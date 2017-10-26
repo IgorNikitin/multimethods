@@ -8,6 +8,6 @@ int multi_method(my_abs, int)
 end_method
 
 int main() {
-    cout << my_abs(-15.) << endl; // 10
+    cout << my_abs(-15.) << endl; // 15
     cout << my_abs(10) << endl; // 10
 }

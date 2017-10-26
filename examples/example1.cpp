@@ -32,8 +32,8 @@ struct shape { virtual ~shape() {} };
 struct rectangle : shape {};
 struct triangle : shape {};
 
-shape multi_method(overlap, shape, shape)
-    match(rectangle, rectangle) { return rectangle(); }
+shape multi_method(overlap, const shape&, const shape&)
+    match(const rectangle&, const rectangle&) { return rectangle(); }
 end_method
 
 int main() {

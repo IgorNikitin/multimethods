@@ -308,23 +308,23 @@ struct has_class_info<T, decltype((void) T::mm_class_id, 0)> : std::true_type {}
 // An argument for polymorphic and non-const type.
 //
 template<class B>
-struct arg_poly_non_const {
+struct arg_poly {
     B* const base_;
 
     // Dummy constructor for fallback.
-    arg_poly_non_const(fallback_t)
+    arg_poly(fallback_t)
     : base_(nullptr) {
     }
 
     // Derived class - can use static_cast
-    template<class T, class = enable_if_t<is_base_of_v<B, decay_t<T>>>>
-    arg_poly_non_const(T&& v)
+    template<class T, class = enable_if_t<is_base_of_v<decay_t<B>, decay_t<T>>>>
+    arg_poly(T&& v)
     : base_(const_cast<B*>(static_cast<const B*>(&v))) {
     }
 
     // Non-related type - need to use dynamic_cast
-    template<class T, class = enable_if_t<!is_base_of_v<B, decay_t<T>>>, class = void>
-    arg_poly_non_const(T&& v)
+    template<class T, class = enable_if_t<!is_base_of_v<decay_t<B>, decay_t<T>>>, class = void>
+    arg_poly(T&& v)
     : base_(const_cast<B*>(dynamic_cast<const B*>(&v))) {
     }
 
@@ -344,67 +344,9 @@ struct arg_poly_non_const {
     template<class T>
     enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && !has_class_info<decay_t<T>>::value, remove_reference_t<T>*> cast() {
         if constexpr(!is_same_v<decay_t<T>, fallback_t>)
-            return dynamic_cast<decay_t<T>*>(base_);
+            return dynamic_cast<remove_reference_t<T>*>(base_);
         else
             return &g_dummy_fallback;
-    }
-};
-
-/**********************************************************************************************/
-// An argument for polymorphic and const type.
-//
-template<class B>
-struct arg_poly_const {
-    B* base_;
-    bool const_;
-
-    // Dummy constructor for fallback.
-    arg_poly_const(fallback_t)
-    : base_(nullptr)
-    , const_(false) {
-    }
-
-    // Derived class - can use static_cast
-    template<class T, class = enable_if_t<is_base_of_v<B, decay_t<T>>>>
-    arg_poly_const(T&& v)
-    : base_(static_cast<B*>(&v))
-    , const_(is_const_v<remove_reference_t<T>>) {
-    }
-
-    // Non-related type - need to use dynamic_cast
-    template<class T, class = enable_if_t<!is_base_of_v<B, decay_t<T>>>, class = void>
-    arg_poly_const(T&& v)
-    : base_(dynamic_cast<B*>(&v))
-    , const_(is_const_v<remove_reference_t<T>>) {
-    }
-
-    template<class T>
-    enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, remove_reference_t<T>*> cast() {
-        if(is_const_v<remove_reference_t<T>> || !const_ )
-            return const_cast<remove_reference_t<T>*>(base_);
-        return nullptr;
-    }
-
-    template<class T, class DT = remove_reference_t<T>>
-    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && has_class_info<decay_t<T>>::value, DT*> cast() {
-        if constexpr(!is_same_v<decay_t<T>, fallback_t>) {
-            if(is_const_v<DT> || !const_)
-                return const_cast<DT*>(reinterpret_cast<const DT*>(base_->mm_cast(decay_t<T>::mm_class_id)));
-        } else
-            return &g_dummy_fallback;
-
-        return nullptr;
-    }
-
-    template<class T, class DT = remove_reference_t<T>>
-    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && !has_class_info<decay_t<T>>::value, DT*> cast() {
-        if constexpr(!is_same_v<decay_t<T>, fallback_t>) {
-            if(is_const_v<DT> || !const_)
-                return const_cast<DT*>(dynamic_cast<const DT*>(base_));
-        } else
-            return &g_dummy_fallback;
-
-        return nullptr;
     }
 };
 
@@ -412,19 +354,19 @@ struct arg_poly_const {
 // An argument for non-polymorphic and non-const type.
 //
 template<class B>
-struct arg_non_poly_non_const {
+struct arg_non_poly {
     B* p_;
 
     // Dummy constructor for fallback.
-    arg_non_poly_non_const(fallback_t)
+    arg_non_poly(fallback_t)
     : p_(nullptr) {
     }
 
-    arg_non_poly_non_const(const B& v)
+    arg_non_poly(const B& v)
     : p_(const_cast<B*>(&v)) {
     }
 
-    arg_non_poly_non_const(B& v)
+    arg_non_poly(B& v)
     : p_(&v) {
     }
 
@@ -434,41 +376,6 @@ struct arg_non_poly_non_const {
             return p_;
         else
             return &g_dummy_fallback;
-    }
-};
-
-/**********************************************************************************************/
-// An argument for non-polymorphic and const type.
-//
-template<class U, class B = remove_const_t<U>>
-struct arg_non_poly_const {
-    bool const_;
-    B* p_;
-
-    // Dummy constructor for fallback.
-    arg_non_poly_const(fallback_t)
-    : p_(nullptr) {
-    }
-
-    arg_non_poly_const(B& v)
-    : const_(false)
-    , p_(const_cast<B*>(&v)) {
-    }
-
-    arg_non_poly_const(const B& v)
-    : const_(true)
-    , p_(const_cast<B*>(&v)) {
-    }
-
-    template<class T>
-    remove_reference_t<T>* cast() {
-        if constexpr(!is_same_v<decay_t<T>, fallback_t>) {
-            if(is_const_v<remove_reference_t<T>> || !const_ )
-                return const_cast<remove_reference_t<T>*>(p_);
-        } else
-            return &g_dummy_fallback;
-
-        return nullptr;
     }
 };
 
@@ -489,18 +396,12 @@ template<
     class S = conditional_t<
                 is_same_v<B, void>,
                     arg_void,
-                    conditional_t<is_polymorphic_v<decay_t<U>>,
-                        conditional_t<is_const_v<remove_reference_t<U>>, arg_poly_const<U>, arg_poly_non_const<U>>,
-                        conditional_t<is_const_v<remove_reference_t<U>>, arg_non_poly_const<U>, arg_non_poly_non_const<U>>>>
+                    conditional_t<
+                        is_polymorphic_v<decay_t<U>>,
+                        arg_poly<U>, arg_non_poly<U>>>
 >
 struct arg final : S {
     arg(const fallback_t&) {}
-
-    template<class T>
-    arg(const T& v) : S(v) {}
-
-    template<class T>
-    arg(T& v) : S(v) {}
 
     template<class T>
     arg(T&& v) : S(std::forward<T>(v)) {}
@@ -571,6 +472,8 @@ template<class T1, class T2, class T3, class T4, class T5, class T6, class T7, c
 /**********************************************************************************************/
 template<class T, class U>
 constexpr bool check_types() {
+    static_assert(is_const_v<remove_reference_t<T>> == is_const_v<remove_reference_t<U>>, "Implementation cannot change constness of parameters.");
+
     if constexpr(is_same_v<decay_t<T>, decay_t<U>>)
         return true;
     else
@@ -660,11 +563,6 @@ constexpr int compare_types() {
 
     // The same types - just check constness
     if constexpr(is_same_v<TD, UD>) {
-        if constexpr(is_const_v<remove_reference_t<T>>)
-            return is_const_v<remove_reference_t<U>> ? 0 : 1;
-        if constexpr(is_const_v<remove_reference_t<U>>)
-            return -1;
-
         return 0;
     } else {
         // Prefer derived classes
