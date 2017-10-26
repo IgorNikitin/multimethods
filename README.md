@@ -3,28 +3,20 @@ Multimethods for C++17
 
 ## Особливості
 
-* Бібліотека автоматичо сортує реалізації, використувачи спадкування та константність (типи порівнюються зліва-направо), наприклад:
+* Бібліотека автоматичо сортує реалізації використувачи спадкування (типи порівнюються зліва-направо), наприклад:
 ```C++
     void multi_method(collide, const thing&)
-        match(const thing&) { cout << "base const\n"; }
-        match(thing&) { cout << "base\n"; }
-        match(const asteroid&) { cout << "derived const\n"; next_method; }
-        match(asteroid&) { cout << "derived\n"; next_method; }
+        match(const thing&) { cout << "base\n"; }
+        match(const asteroid&) { cout << "derived\n"; next_method; }
     end_method
     ...
     asteroid a;
     collide(a);
-    cout << "-------------\n";
-    collide((const thing&) a);
 ``` 
 виведе на екран:
 ```
     derived
-    derived const
     base
-    -------------
-    derived const
-    base const
 ```
 * можливість обирати методи, використовуючи передані аргументи, наприклад:
 ```C++
@@ -131,8 +123,8 @@ struct shape { virtual ~shape() {} };
 struct rectangle : shape {};
 struct triangle : shape {};
 
-shape multi_method(overlap, shape, shape)
-    match(rectangle, rectangle) { return rectangle(); }
+shape multi_method(overlap, const shape&, const shape&)
+    match(const rectangle&, const rectangle&) { return rectangle(); }
 end_method
 
 int main() {
