@@ -9,7 +9,6 @@
 /**********************************************************************************************/
 
 #include <algorithm>
-#include <any>
 #include <optional>
 #include <string>
 #include <tuple>
@@ -1031,9 +1030,9 @@ struct sort_functions final {
         return false;
     }
 
-    // Sorts methods and return vector with instances of 'abstract_method'
+    // Sorts methods and returns vector with instances of 'abstract_method'
     template<class TP, class TR, class BR1, class BR2, class BR3, class BR4, class BR5, class BR6>
-    auto sort_methods() {
+    auto sort_methods() const {
         // Use indexes cause we cannot sort tuple itself
         int indexes[N];
         for(int i = 0 ; i < N ; ++i)
