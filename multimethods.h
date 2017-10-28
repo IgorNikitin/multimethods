@@ -465,7 +465,7 @@ template<class T, class B = conditional_t<
 >
 struct method_ret_type final : B {
     template<class U>
-    method_ret_type(U&& v) : B(std::forward<U>(v)) {}
+    explicit method_ret_type(U&& v) : B(std::forward<U>(v)) {}
 };
 
 
@@ -773,10 +773,11 @@ struct function_traits : public function_traits_impl<F> {
 /**********************************************************************************************/
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_0 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
+    using ret_t = typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t;
     const F f_;
     constexpr explicit method_0(F f) : f_(f) {}
 
-    typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call() { return f_(); }
+    ret_t call() { return ret_t { f_() }; }
 };
 
 /**********************************************************************************************/
@@ -791,11 +792,12 @@ struct method_0_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 /**********************************************************************************************/
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_1 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
+    using ret_t = typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t;
     const F f_;
     constexpr explicit method_1(F f) : f_(f) {}
 
-    constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1) {
-        MM_CAST_1 return f_(*u1);
+    constexpr ret_t call(arg<B1> p1) {
+        MM_CAST_1 return ret_t { f_(*u1) };
         return {};
     }
 
@@ -819,11 +821,12 @@ struct method_1_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 /**********************************************************************************************/
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_2 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
+    using ret_t = typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t;
     const F f_;
     constexpr explicit method_2(F f) : f_(f) {}
 
-    constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2) {
-        MM_CAST_2 return f_(*u1, *u2);
+    constexpr ret_t call(arg<B1> p1, arg<B2> p2) {
+        MM_CAST_2 return ret_t { f_(*u1, *u2) };
         return {};
     }
 };
@@ -843,11 +846,12 @@ struct method_2_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 /**********************************************************************************************/
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_3 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
+    using ret_t = typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t;
     const F f_;
     constexpr explicit method_3(F f) : f_(f) {}
 
-    constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3) {
-        MM_CAST_3 return f_(*u1, *u2, *u3);
+    constexpr ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3) {
+        MM_CAST_3 return ret_t { f_(*u1, *u2, *u3) };
         return {};
     }
 };
@@ -867,11 +871,12 @@ struct method_3_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 /**********************************************************************************************/
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_4 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
+    using ret_t = typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t;
     const F f_;
     constexpr explicit method_4(F f) : f_(f) {}
 
-    constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4) {
-        MM_CAST_4 return f_(*u1, *u2, *u3, *u4);
+    constexpr ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4) {
+        MM_CAST_4 return ret_t { f_(*u1, *u2, *u3, *u4) };
         return {};
     }
 };
@@ -891,11 +896,12 @@ struct method_4_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 /**********************************************************************************************/
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_5 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
+    using ret_t = typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t;
     const F f_;
     constexpr explicit method_5(F f) : f_(f) {}
 
-    constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5) {
-        MM_CAST_5 return f_(*u1, *u2, *u3, *u4, *u5);
+    constexpr ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5) {
+        MM_CAST_5 return ret_t { f_(*u1, *u2, *u3, *u4, *u5) };
         return {};
     }
 };
@@ -915,11 +921,12 @@ struct method_5_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 /**********************************************************************************************/
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_6 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
+    using ret_t = typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t;
     const F f_;
     constexpr explicit method_6(F f) : f_(f) {}
 
-    constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5, arg<B6> p6) {
-        MM_CAST_6 return f_(*u1, *u2, *u3, *u4, *u5, *u6);
+    constexpr ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5, arg<B6> p6) {
+        MM_CAST_6 return ret_t { f_(*u1, *u2, *u3, *u4, *u5, *u6) };
         return {};
     }
 };
