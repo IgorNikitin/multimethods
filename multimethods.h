@@ -370,18 +370,22 @@ struct arg_poly {
 
     template<class T, class TD = remove_reference_t<T>>
     constexpr enable_if_t<!is_same_v<decay_t<T>, decay_t<B>>, TD*> cast() const {
+        TD* r;
+
         // Fallback
         if constexpr(is_same_v<decay_t<T>, fallback_t>) {
-            return &g_dummy_fallback;
+            r = &g_dummy_fallback;
         }
         // Class with MM_CLASS macro
         else if constexpr(has_class_info<decay_t<T>>::value) {
-            return reinterpret_cast<TD*>(base_->mm_cast(decay_t<T>::mm_class_id));
+            r = reinterpret_cast<TD*>(base_->mm_cast(decay_t<T>::mm_class_id));
         }
         // Class without MM_CLASS macro
         else {
-            return dynamic_cast<TD*>(base_);
+            r = dynamic_cast<TD*>(base_);
         }
+
+        return r;
     }
 };
 
@@ -402,14 +406,18 @@ struct arg_non_poly {
 
     template<class T>
     constexpr remove_reference_t<T>* cast() const {
+        remove_reference_t<T>* r;
+
         // Fallback
         if constexpr(is_same_v<decay_t<T>, fallback_t>) {
-            return &g_dummy_fallback;
+            r = &g_dummy_fallback;
         }
         // Value
         else {
-            return p_;
+            r = p_;
         }
+
+        return r;
     }
 };
 
