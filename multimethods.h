@@ -17,7 +17,7 @@
 /**********************************************************************************************/
 // Defines a new multimethod and specifies it's result type and parameters.
 //
-//   void define_method(collide, thing&, thing&)
+//   void multi_method(collide, thing&, thing&)
 //       match(asteroid&, asteroid&) {}
 //       match(asteroid&, spaceship&) {}
 //   end_method
