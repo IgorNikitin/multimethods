@@ -62,7 +62,7 @@
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(g_dummy_fallback)) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
@@ -84,7 +84,7 @@
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(g_dummy_fallback)) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
@@ -107,7 +107,7 @@
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(g_dummy_fallback)) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
@@ -131,7 +131,7 @@
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(g_dummy_fallback)) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
@@ -156,7 +156,7 @@
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(g_dummy_fallback)) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
@@ -182,7 +182,7 @@
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(g_dummy_fallback)) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
@@ -209,7 +209,7 @@
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(g_dummy_fallback)) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
@@ -432,7 +432,7 @@ template<
                   conditional_t<is_polymorphic_v<decay_t<U>>, arg_poly<U>, arg_non_poly<U>>>
 >
 struct arg final : S {
-    constexpr arg(fallback_t /*dummy*/) {}
+    constexpr explicit arg(fallback_t /*dummy*/) {}
     constexpr explicit arg(B& v) : S(v) {}
 };
 
