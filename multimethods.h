@@ -404,11 +404,12 @@ struct arg_non_poly {
     constexpr remove_reference_t<T>* cast() const {
         // Fallback
         if constexpr(is_same_v<decay_t<T>, fallback_t>) {
-            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
+            return &g_dummy_fallback;
         }
-
         // Value
-        return p_;
+        else {
+            return p_;
+        }
     }
 };
 
@@ -464,6 +465,7 @@ template<class T, class B = conditional_t<
     optional<remove_reference_t<T>>>
 >
 struct method_ret_type final : B {
+    method_ret_type() = default;
     explicit method_ret_type(T&& v) : B(std::forward<T>(v)) {}
 };
 
