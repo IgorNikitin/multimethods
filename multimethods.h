@@ -63,7 +63,7 @@
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
-        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+        throw ::multimethods::not_implemented(#name ": not implemented."); \
     } \
     \
     template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 1>> \
@@ -83,7 +83,7 @@
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
-        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+        throw ::multimethods::not_implemented(#name ": not implemented."); \
     } \
     \
     template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 2>> \
@@ -103,7 +103,7 @@
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
-        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+        throw ::multimethods::not_implemented(#name ": not implemented."); \
     } \
     \
     template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 3>> \
@@ -123,7 +123,7 @@
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
-        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+        throw ::multimethods::not_implemented(#name ": not implemented."); \
     } \
     \
     template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 4>> \
@@ -143,7 +143,7 @@
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
-        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+        throw ::multimethods::not_implemented(#name ": not implemented."); \
     } \
     \
     template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 5>> \
@@ -163,7 +163,7 @@
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
-        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+        throw ::multimethods::not_implemented(#name ": not implemented."); \
     } \
     \
     template<int N = mm_namespace_ ## name::arity, class = std::enable_if_t<N == 6>> \
@@ -183,7 +183,7 @@
                 return method_result<ret_type_t>::unwrap(r); \
         } \
         \
-        throw ::multimethods::not_implemented(#name ": not_implemented."); \
+        throw ::multimethods::not_implemented(#name ": not implemented."); \
     } \
     \
     namespace mm_namespace_ ## name { \
@@ -309,35 +309,30 @@ template<class B>
 struct arg_poly {
     B* const base_;
 
-    // Dummy constructor for fallback.
-    arg_poly(fallback_t)
+    constexpr arg_poly()
     : base_(nullptr) {
     }
 
-    template<class T>
-    arg_poly(T&& v)
-    : base_(const_cast<B*>(static_cast<const B*>(&v))) {
+    constexpr arg_poly(B& v)
+    : base_(&v) {
     }
 
     template<class T>
-    enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, remove_reference_t<T>*> cast() const {
+    constexpr enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, remove_reference_t<T>*> cast() const {
         return base_;
     }
 
     template<class T, class TD = remove_reference_t<T>>
-    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && has_class_info<decay_t<T>>::value, TD*> cast() const {
-        if constexpr(!is_same_v<decay_t<T>, fallback_t>)
+    constexpr enable_if_t<!is_same_v<decay_t<T>, decay_t<B>>, TD*> cast() const {
+        // Fallback
+        if constexpr(is_same_v<decay_t<T>, fallback_t>)
+            return reinterpret_cast<TD*>(&g_dummy_fallback);
+        // Class with MM_CLASS macro
+        else if constexpr(has_class_info<decay_t<T>>::value)
             return const_cast<TD*>(reinterpret_cast<const TD*>(base_->mm_cast(decay_t<T>::mm_class_id)));
+        // Class without MM_CLASS macro
         else
-            return &g_dummy_fallback;
-    }
-
-    template<class T>
-    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && !has_class_info<decay_t<T>>::value, remove_reference_t<T>*> cast() const {
-        if constexpr(!is_same_v<decay_t<T>, fallback_t>)
             return dynamic_cast<remove_reference_t<T>*>(base_);
-        else
-            return &g_dummy_fallback;
     }
 };
 
@@ -346,24 +341,24 @@ struct arg_poly {
 //
 template<class B>
 struct arg_non_poly {
-    B* p_;
+    B* const p_;
 
-    // Dummy constructor for fallback.
-    arg_non_poly(fallback_t)
+    constexpr arg_non_poly()
     : p_(nullptr) {
     }
 
-    // Constructs from value
-    arg_non_poly(const B& v)
-    : p_(const_cast<B*>(&v)) {
+    constexpr arg_non_poly(B& v)
+    : p_(&v) {
     }
 
     template<class T>
-    remove_reference_t<T>* cast() const {
-        if constexpr(!is_same_v<decay_t<T>, fallback_t>)
-            return p_;
+    constexpr remove_reference_t<T>* cast() const {
+        // Fallback
+        if constexpr(is_same_v<decay_t<T>, fallback_t>)
+            return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
+        // Value
         else
-            return &g_dummy_fallback;
+            return p_;
     }
 };
 
@@ -372,7 +367,7 @@ struct arg_non_poly {
 //
 struct arg_void {
     template<class T>
-    remove_reference_t<T>* cast() const { return nullptr; }
+    constexpr remove_reference_t<T>* cast() const { return nullptr; }
 };
 
 /**********************************************************************************************/
@@ -381,18 +376,13 @@ struct arg_void {
 template<
     class B,
     class U = remove_reference_t<B>,
-    class S = conditional_t<
-                is_same_v<B, void>,
-                    arg_void,
-                    conditional_t<
-                        is_polymorphic_v<decay_t<U>>,
-                        arg_poly<U>, arg_non_poly<U>>>
+    class S = conditional_t<is_same_v<B, void>,
+                  arg_void,
+                  conditional_t<is_polymorphic_v<decay_t<U>>, arg_poly<U>, arg_non_poly<U>>>
 >
 struct arg final : S {
-    arg(const fallback_t&) {}
-
-    template<class T>
-    arg(T&& v) : S(std::forward<T>(v)) {}
+    constexpr arg(fallback_t) {}
+    constexpr arg(B& v) : S(v) {}
 };
 
 /**********************************************************************************************/
