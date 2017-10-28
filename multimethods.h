@@ -464,8 +464,7 @@ template<class T, class B = conditional_t<
     optional<remove_reference_t<T>>>
 >
 struct method_ret_type final : B {
-    template<class U>
-    explicit method_ret_type(U&& v) : B(std::forward<U>(v)) {}
+    explicit method_ret_type(T&& v) : B(std::forward<T>(v)) {}
 };
 
 
