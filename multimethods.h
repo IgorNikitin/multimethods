@@ -8,6 +8,9 @@
 // (See accompanying file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 /**********************************************************************************************/
 
+#ifndef H_IN_MULTIMETHODS
+#define H_IN_MULTIMETHODS
+
 #include <algorithm>
 #include <array>
 #include <optional>
@@ -71,9 +74,11 @@
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
         \
+        const arg<base1_t> a1(p1); \
+        \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(p1)) \
+                if(auto r = (*m)->call(a1)) \
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
@@ -91,9 +96,12 @@
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
         \
+        const arg<base1_t> a1(p1); \
+        const arg<base2_t> a2(p2); \
+        \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(p1, p2)) \
+                if(auto r = (*m)->call(a1, a2)) \
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
@@ -111,9 +119,13 @@
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
         \
+        const arg<base1_t> a1(p1); \
+        const arg<base2_t> a2(p2); \
+        const arg<base3_t> a3(p3); \
+        \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(p1, p2, p3)) \
+                if(auto r = (*m)->call(a1, a2, a3)) \
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
@@ -131,9 +143,14 @@
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
         \
+        const arg<base1_t> a1(p1); \
+        const arg<base2_t> a2(p2); \
+        const arg<base3_t> a3(p3); \
+        const arg<base4_t> a4(p4); \
+        \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(p1, p2, p3, p4)) \
+                if(auto r = (*m)->call(a1, a2, a3, a4)) \
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
@@ -151,9 +168,15 @@
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
         \
+        const arg<base1_t> a1(p1); \
+        const arg<base2_t> a2(p2); \
+        const arg<base3_t> a3(p3); \
+        const arg<base4_t> a4(p4); \
+        const arg<base5_t> a5(p5); \
+        \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(p1, p2, p3, p4, p5)) \
+                if(auto r = (*m)->call(a1, a2, a3, a4, a5)) \
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
@@ -171,9 +194,16 @@
         using namespace ::multimethods::detail; \
         using namespace mm_namespace_ ## name; \
         \
+        const arg<base1_t> a1(p1); \
+        const arg<base2_t> a2(p2); \
+        const arg<base3_t> a3(p3); \
+        const arg<base4_t> a4(p4); \
+        const arg<base5_t> a5(p5); \
+        const arg<base6_t> a6(p6); \
+        \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(p1, p2, p3, p4, p5, p6)) \
+                if(auto r = (*m)->call(a1, a2, a3, a4, a5, a6)) \
                     return method_result<ret_type_t>::unwrap(r); \
             } catch(try_next&) { \
             } \
@@ -242,12 +272,17 @@
     public: \
     static inline const int mm_class_id = ::multimethods::detail::g_class_id_counter++; \
     \
+    virtual void* mm_cast(int n) { \
+        if(n == mm_class_id || ::multimethods::detail::match_class_id< __VA_ARGS__>(n)) \
+            return this; \
+        return nullptr; \
+    } \
+    \
     virtual const void* mm_cast(int n) const { \
         if(n == mm_class_id || ::multimethods::detail::match_class_id< __VA_ARGS__>(n)) \
-            return reinterpret_cast<const void*>(this); \
+            return this; \
         return nullptr; \
     }
-
 
 /**********************************************************************************************/
 namespace multimethods {
@@ -257,9 +292,9 @@ namespace multimethods {
 //
 struct not_implemented final : std::exception {
     std::string name_;
-    not_implemented(const char* name) : name_(name) {}
+    explicit not_implemented(const char* name) : name_(name) {}
 
-    virtual const char* what() const noexcept { return name_.c_str(); }
+    const char* what() const noexcept final { return name_.c_str(); }
 };
 
 
@@ -267,7 +302,18 @@ struct not_implemented final : std::exception {
 namespace detail {
 
 /**********************************************************************************************/
-using namespace std;
+using std::array;
+using std::conditional_t;
+using std::decay_t;
+using std::enable_if_t;
+using std::is_base_of_v;
+using std::is_const_v;
+using std::is_polymorphic_v;
+using std::is_reference_v;
+using std::is_same_v;
+using std::optional;
+using std::sort;
+using std::remove_reference_t;
 
 /**********************************************************************************************/
 struct fallback_t {}; // Special type to use as parameter of a fallback function (to detect it in a list with implementations).
@@ -283,7 +329,7 @@ static inline int g_class_id_counter = 0;
 //
 template<class... Args>
 constexpr enable_if_t<sizeof...(Args) == 0, bool>
-match_class_id(int) {
+match_class_id(int /*n*/) {
     return false;
 }
 
@@ -313,7 +359,7 @@ struct arg_poly {
     : base_(nullptr) {
     }
 
-    constexpr arg_poly(B& v)
+    constexpr explicit arg_poly(B& v)
     : base_(&v) {
     }
 
@@ -325,14 +371,17 @@ struct arg_poly {
     template<class T, class TD = remove_reference_t<T>>
     constexpr enable_if_t<!is_same_v<decay_t<T>, decay_t<B>>, TD*> cast() const {
         // Fallback
-        if constexpr(is_same_v<decay_t<T>, fallback_t>)
-            return reinterpret_cast<TD*>(&g_dummy_fallback);
+        if constexpr(is_same_v<decay_t<T>, fallback_t>) {
+            return &g_dummy_fallback;
+        }
         // Class with MM_CLASS macro
-        else if constexpr(has_class_info<decay_t<T>>::value)
-            return const_cast<TD*>(reinterpret_cast<const TD*>(base_->mm_cast(decay_t<T>::mm_class_id)));
+        else if constexpr(has_class_info<decay_t<T>>::value) {
+            return reinterpret_cast<TD*>(base_->mm_cast(decay_t<T>::mm_class_id));
+        }
         // Class without MM_CLASS macro
-        else
-            return dynamic_cast<remove_reference_t<T>*>(base_);
+        else {
+            return dynamic_cast<TD*>(base_);
+        }
     }
 };
 
@@ -347,18 +396,19 @@ struct arg_non_poly {
     : p_(nullptr) {
     }
 
-    constexpr arg_non_poly(B& v)
+    constexpr explicit arg_non_poly(B& v)
     : p_(&v) {
     }
 
     template<class T>
     constexpr remove_reference_t<T>* cast() const {
         // Fallback
-        if constexpr(is_same_v<decay_t<T>, fallback_t>)
+        if constexpr(is_same_v<decay_t<T>, fallback_t>) {
             return reinterpret_cast<remove_reference_t<T>*>(&g_dummy_fallback);
+        }
+
         // Value
-        else
-            return p_;
+        return p_;
     }
 };
 
@@ -381,15 +431,15 @@ template<
                   conditional_t<is_polymorphic_v<decay_t<U>>, arg_poly<U>, arg_non_poly<U>>>
 >
 struct arg final : S {
-    constexpr arg(fallback_t) {}
-    constexpr arg(B& v) : S(v) {}
+    constexpr arg(fallback_t /*dummy*/) {}
+    constexpr explicit arg(B& v) : S(v) {}
 };
 
 /**********************************************************************************************/
 // Exception to skip an implementation and try next one.
 //
 struct try_next final : std::exception {
-    virtual const char* what() const noexcept { return "next_method"; }
+    const char* what() const noexcept final { return "next_method"; }
 };
 
 
@@ -399,9 +449,9 @@ struct try_next final : std::exception {
 template<class U>
 struct optional_ref {
     optional_ref() : p_(nullptr) {}
-    optional_ref(U v) : p_(&v) {}
+    explicit optional_ref(U v) : p_(&v) {}
 
-    operator bool() const { return p_; }
+    explicit operator bool() const { return p_; }
     U operator *() const { return static_cast<U>(*p_); }
 
     remove_reference_t<U>* p_;
@@ -414,8 +464,6 @@ template<class T, class B = conditional_t<
     optional<remove_reference_t<T>>>
 >
 struct method_ret_type final : B {
-    method_ret_type() {}
-
     template<class U>
     method_ret_type(U&& v) : B(std::forward<U>(v)) {}
 };
@@ -428,12 +476,12 @@ template<class T, class B1, class B2, class B3, class B4, class B5, class B6>
 struct abstract_method {
     using ret_t = conditional_t<is_same_v<T, void>, bool, method_ret_type<T>>;
     virtual ret_t call() { return {}; }
-    virtual ret_t call(arg<B1>) { return {}; }
-    virtual ret_t call(arg<B1>, arg<B2>) { return {}; }
-    virtual ret_t call(arg<B1>, arg<B2>, arg<B3>) { return {}; }
-    virtual ret_t call(arg<B1>, arg<B2>, arg<B3>, arg<B4>) { return {}; }
-    virtual ret_t call(arg<B1>, arg<B2>, arg<B3>, arg<B4>, arg<B5>) { return {}; }
-    virtual ret_t call(arg<B1>, arg<B2>, arg<B3>, arg<B4>, arg<B5>, arg<B6>) { return {}; }
+    virtual ret_t call(arg<B1> /*p1*/) { return {}; }
+    virtual ret_t call(arg<B1> /*p1*/, arg<B2> /*p2*/) { return {}; }
+    virtual ret_t call(arg<B1> /*p1*/, arg<B2> /*p2*/, arg<B3> /*p3*/) { return {}; }
+    virtual ret_t call(arg<B1> /*p1*/, arg<B2> /*p2*/, arg<B3> /*p3*/, arg<B4> /*p4*/) { return {}; }
+    virtual ret_t call(arg<B1> /*p1*/, arg<B2> /*p2*/, arg<B3> /*p3*/, arg<B4> /*p4*/, arg<B5> /*p5*/) { return {}; }
+    virtual ret_t call(arg<B1> /*p1*/, arg<B2> /*p2*/, arg<B3> /*p3*/, arg<B4> /*p4*/, arg<B5> /*p5*/, arg<B6> /*p6*/) { return {}; }
     virtual bool is_fallback() const { return false; }
 };
 
@@ -453,10 +501,9 @@ constexpr bool check_types() {
     static_assert(is_reference_v<T> == is_reference_v<U>, "Implementation cannot add/remove reference to a parameter's type.");
     static_assert(is_const_v<remove_reference_t<T>> == is_const_v<remove_reference_t<U>>, "Implementation cannot add/remove const to a parameter's type.");
 
-    if constexpr(is_same_v<decay_t<T>, decay_t<U>>)
-        return true;
-    else
+    if constexpr(!is_same_v<decay_t<T>, decay_t<U>>) {
         static_assert(is_polymorphic_v<decay_t<T>> && is_base_of_v<decay_t<T>, decay_t<U>>, "Implementation can specify parameter's type, but not replace it.");
+    }
 
     return true;
 }
@@ -534,13 +581,17 @@ constexpr int compare_types() {
     using UD = decay_t<U>;
 
     // The same types - just check constness
-    if constexpr(is_same_v<TD, UD>)
+    if constexpr(is_same_v<TD, UD>) {
         return 0;
+    }
+
     // Prefer derived classes
-    else if constexpr (is_base_of_v<decay_t<T>, decay_t<U>>)
+    if constexpr (is_base_of_v<decay_t<T>, decay_t<U>>) {
         return 1;
-    else if constexpr(is_base_of_v<decay_t<U>, decay_t<T>>)
+    }
+    if constexpr(is_base_of_v<decay_t<U>, decay_t<T>>) {
         return -1;
+    }
 
     return 0;
 }
@@ -548,40 +599,45 @@ constexpr int compare_types() {
 /**********************************************************************************************/
 template<class T1, class T2, class U1, class U2>
 constexpr int compare_types() {
-    if(constexpr int r = compare_types<T1, U1>() )
+    if(constexpr int r = compare_types<T1, U1>() ) {
         return r;
+    }
     return compare_types<T2, U2>();
 }
 
 /**********************************************************************************************/
 template<class T1, class T2, class T3, class U1, class U2, class U3>
 constexpr int compare_types() {
-    if(constexpr int r = compare_types<T1, U1>() )
+    if(constexpr int r = compare_types<T1, U1>() ) {
         return r;
+    }
     return compare_types<T2, T3, U2, U3>();
 }
 
 /**********************************************************************************************/
 template<class T1, class T2, class T3, class T4, class U1, class U2, class U3, class U4>
 constexpr int compare_types() {
-    if(constexpr int r = compare_types<T1, U1>() )
+    if(constexpr int r = compare_types<T1, U1>() ) {
         return r;
+    }
     return compare_types<T2, T3, T4, U2, U3, U4>();
 }
 
 /**********************************************************************************************/
 template<class T1, class T2, class T3, class T4, class T5, class U1, class U2, class U3, class U4, class U5>
 constexpr int compare_types() {
-    if(constexpr int r = compare_types<T1, U1>() )
+    if(constexpr int r = compare_types<T1, U1>() ) {
         return r;
+    }
     return compare_types<T2, T3, T4, T5, U2, U3, U4, U5>();
 }
 
 /**********************************************************************************************/
 template<class T1, class T2, class T3, class T4, class T5, class T6, class U1, class U2, class U3, class U4, class U5, class U6>
 constexpr int compare_types() {
-    if(constexpr int r = compare_types<T1, U1>() )
+    if(constexpr int r = compare_types<T1, U1>() ) {
         return r;
+    }
     return compare_types<T2, T3, T4, T5, T6, U2, U3, U4, U5, U6>();
 }
 
@@ -718,7 +774,7 @@ struct function_traits : public function_traits_impl<F> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_0 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_0(F f) : f_(f) {}
+    constexpr explicit method_0(F f) : f_(f) {}
 
     typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call() { return f_(); }
 };
@@ -727,7 +783,7 @@ struct method_0 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_0_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_0_void(F f) : f_(f) {}
+    constexpr explicit method_0_void(F f) : f_(f) {}
 
     bool call() { f_(); return true; }
 };
@@ -736,7 +792,7 @@ struct method_0_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_1 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_1(F f) : f_(f) {}
+    constexpr explicit method_1(F f) : f_(f) {}
 
     constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1) {
         MM_CAST_1 return f_(*u1);
@@ -750,7 +806,7 @@ struct method_1 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_1_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_1_void(F f) : f_(f) {}
+    constexpr explicit method_1_void(F f) : f_(f) {}
 
     constexpr bool call(arg<B1> p1) {
         MM_CAST_1 { f_(*u1); return true; }
@@ -764,7 +820,7 @@ struct method_1_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_2 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_2(F f) : f_(f) {}
+    constexpr explicit method_2(F f) : f_(f) {}
 
     constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2) {
         MM_CAST_2 return f_(*u1, *u2);
@@ -776,7 +832,7 @@ struct method_2 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_2_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_2_void(F f) : f_(f) {}
+    constexpr explicit method_2_void(F f) : f_(f) {}
 
     constexpr bool call(arg<B1> p1, arg<B2> p2) {
         MM_CAST_2 { f_(*u1, *u2); return true; }
@@ -788,7 +844,7 @@ struct method_2_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_3 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_3(F f) : f_(f) {}
+    constexpr explicit method_3(F f) : f_(f) {}
 
     constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3) {
         MM_CAST_3 return f_(*u1, *u2, *u3);
@@ -800,7 +856,7 @@ struct method_3 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_3_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_3_void(F f) : f_(f) {}
+    constexpr explicit method_3_void(F f) : f_(f) {}
 
     constexpr bool call(arg<B1> p1, arg<B2> p2, arg<B3> p3) {
         MM_CAST_3 { f_(*u1, *u2, *u3); return true; }
@@ -812,7 +868,7 @@ struct method_3_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_4 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_4(F f) : f_(f) {}
+    constexpr explicit method_4(F f) : f_(f) {}
 
     constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4) {
         MM_CAST_4 return f_(*u1, *u2, *u3, *u4);
@@ -824,7 +880,7 @@ struct method_4 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_4_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_4_void(F f) : f_(f) {}
+    constexpr explicit method_4_void(F f) : f_(f) {}
 
     constexpr bool call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4) {
         MM_CAST_4 { f_(*u1, *u2, *u3, *u4); return true; }
@@ -836,7 +892,7 @@ struct method_4_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_5 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_5(F f) : f_(f) {}
+    constexpr explicit method_5(F f) : f_(f) {}
 
     constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5) {
         MM_CAST_5 return f_(*u1, *u2, *u3, *u4, *u5);
@@ -848,7 +904,7 @@ struct method_5 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_5_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_5_void(F f) : f_(f) {}
+    constexpr explicit method_5_void(F f) : f_(f) {}
 
     constexpr bool call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5) {
         MM_CAST_5 { f_(*u1, *u2, *u3, *u4, *u5); return true; }
@@ -860,7 +916,7 @@ struct method_5_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_6 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_6(F f) : f_(f) {}
+    constexpr explicit method_6(F f) : f_(f) {}
 
     constexpr typename abstract_method<T, B1, B2, B3, B4, B5, B6>::ret_t call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5, arg<B6> p6) {
         MM_CAST_6 return f_(*u1, *u2, *u3, *u4, *u5, *u6);
@@ -872,7 +928,7 @@ struct method_6 final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 template<class T, class B1, class B2, class B3, class B4, class B5, class B6, class F>
 struct method_6_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
     const F f_;
-    constexpr method_6_void(F f) : f_(f) {}
+    constexpr explicit method_6_void(F f) : f_(f) {}
 
     constexpr bool call(arg<B1> p1, arg<B2> p2, arg<B3> p3, arg<B4> p4, arg<B5> p5, arg<B6> p6) {
         MM_CAST_6 { f_(*u1, *u2, *u3, *u4, *u5, *u6); return true; }
@@ -891,21 +947,21 @@ struct method_6_void final : abstract_method<T, B1, B2, B3, B4, B5, B6> {
 
 /**********************************************************************************************/
 template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline
-auto make_method(bool) {
+auto make_method(bool /*dummy*/) {
     return nullptr;
 }
 
 /**********************************************************************************************/
 #define MM_MAKE_METHOD(N) \
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
-    auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && !is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
+    auto make_method(F f) -> enable_if_t<function_traits<F>::arity == (N) && !is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
         static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Invalid count of implementation's parameters."); \
         static_assert(check_parameters<P, F>::value, "Incompatible implementation's parameters types."); \
         return new method_ ## N<T, B1, B2, B3, B4, B5, B6, F>(f); \
     } \
     \
     template<class P, class T, class B1, class B2, class B3, class B4, class B5, class B6, class F> inline \
-    auto make_method(F f) -> enable_if_t<function_traits<F>::arity == N && is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
+    auto make_method(F f) -> enable_if_t<function_traits<F>::arity == (N) && is_same_v<void, typename function_traits<F>::ret_type>, abstract_method<T, B1, B2, B3, B4, B5, B6>*> { \
         static_assert(function_traits<F>::arity == function_traits<P>::arity || is_same_v<typename function_traits<F>::arg1_type, fallback_t>, "Invalid count of implementation's parameters."); \
         static_assert(check_parameters<P, F>::value, "Incompatible implementation's parameters types."); \
         return new method_ ## N ## _void<T, B1, B2, B3, B4, B5, B6, F>(f); \
@@ -933,7 +989,7 @@ struct method_result_impl {
 /**********************************************************************************************/
 template<>
 struct method_result_impl<void> {
-    static void unwrap(bool) {}
+    static void unwrap(bool /*v*/) {}
 };
 
 /**********************************************************************************************/
@@ -961,7 +1017,7 @@ struct get_type_by_index<0, T, Args...> {
 template<class... Funcs>
 struct sort_functions final {
     const std::tuple<bool, Funcs...> funcs_;
-    constexpr sort_functions( std::tuple<bool, Funcs...>&& funcs ) : funcs_(funcs) {}
+    constexpr explicit sort_functions( std::tuple<bool, Funcs...>&& funcs ) : funcs_(funcs) {}
 
     static constexpr int N = sizeof...(Funcs);
     static_assert(N < 65, "Too many implementations.");
@@ -970,7 +1026,7 @@ struct sort_functions final {
     using func_type_t = typename get_type_by_index<N, Funcs...>::type;
 
     #define MM_FUNC_TYPE(I) \
-        using F ## I = func_type_t<(I < N ? I : 0)>
+        using F ## I = func_type_t<((I) < N ? (I) : 0)>
 
     MM_FUNC_TYPE(0); MM_FUNC_TYPE(1); MM_FUNC_TYPE(2); MM_FUNC_TYPE(3);
     MM_FUNC_TYPE(4); MM_FUNC_TYPE(5); MM_FUNC_TYPE(6); MM_FUNC_TYPE(7);
@@ -995,7 +1051,7 @@ struct sort_functions final {
     template<class A>
     static constexpr bool pred_b(int b) {
         #define MM_CASE_B(I) \
-            if(b == I) return compare_methods<A, F ## I>::value < 0;
+            if(b == (I)) return compare_methods<A, F ## I>::value < 0;
 
         MM_CASE_B(0); MM_CASE_B(1); MM_CASE_B(2); MM_CASE_B(3);
         MM_CASE_B(4); MM_CASE_B(5); MM_CASE_B(6); MM_CASE_B(7);
@@ -1020,18 +1076,19 @@ struct sort_functions final {
     }
 
     // Sorts methods and returns vector with instances of 'abstract_method'
-    // TODO: constexpr
+    // TODO(I.N.): constexpr
     template<class TP, class TR, class BR1, class BR2, class BR3, class BR4, class BR5, class BR6>
     auto sort_methods() const {
         // Use indexes cause we cannot sort tuple itself
         array<int, N> indexes {};
-        for(int i = 0 ; i < N ; ++i)
+        for(int i = 0 ; i < N ; ++i) {
             indexes[i] = i;
+        }
 
         // Sort implementations
         sort(indexes.begin(), indexes.end(), [](int a, int b) {
             #define MM_CASE_A(I) \
-                if(a == I) return sort_functions::pred_b<F ## I>(b)
+                if(a == (I)) return sort_functions::pred_b<F ## I>(b)
 
             MM_CASE_A(0); MM_CASE_A(1); MM_CASE_A(2); MM_CASE_A(3);
             MM_CASE_A(4); MM_CASE_A(5); MM_CASE_A(6); MM_CASE_A(7);
@@ -1061,7 +1118,7 @@ struct sort_functions final {
         for(int i = 0 ; i < N ; ++i) {
             switch(indexes[i]) {
                 #define MM_FILL_VECTOR(I) \
-                    case I: r[i] = make_method<TP, TR, BR1, BR2, BR3, BR4, BR5, BR6, F ## I>(std::get<I < N ? I + 1 : 0>(funcs_)); break
+                    case I: r[i] = make_method<TP, TR, BR1, BR2, BR3, BR4, BR5, BR6, F ## I>(std::get<(I) < N ? (I) + 1 : 0>(funcs_)); break
 
                 MM_FILL_VECTOR(0); MM_FILL_VECTOR(1); MM_FILL_VECTOR(2); MM_FILL_VECTOR(3);
                 MM_FILL_VECTOR(4); MM_FILL_VECTOR(5); MM_FILL_VECTOR(6); MM_FILL_VECTOR(7);
@@ -1092,4 +1149,7 @@ struct sort_functions final {
 
 
 /**********************************************************************************************/
-} }
+} // namespace detail
+} // namespace multimethods
+
+#endif // H_IN_MULTIMETHODS
