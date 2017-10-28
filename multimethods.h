@@ -320,12 +320,12 @@ struct arg_poly {
     }
 
     template<class T>
-    enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, remove_reference_t<T>*> cast() {
+    enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, remove_reference_t<T>*> cast() const {
         return base_;
     }
 
     template<class T, class TD = remove_reference_t<T>>
-    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && has_class_info<decay_t<T>>::value, TD*> cast() {
+    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && has_class_info<decay_t<T>>::value, TD*> cast() const {
         if constexpr(!is_same_v<decay_t<T>, fallback_t>)
             return const_cast<TD*>(reinterpret_cast<const TD*>(base_->mm_cast(decay_t<T>::mm_class_id)));
         else
@@ -333,7 +333,7 @@ struct arg_poly {
     }
 
     template<class T>
-    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && !has_class_info<decay_t<T>>::value, remove_reference_t<T>*> cast() {
+    enable_if_t<!is_same_v<decay_t<T>, decay_t<B>> && !has_class_info<decay_t<T>>::value, remove_reference_t<T>*> cast() const {
         if constexpr(!is_same_v<decay_t<T>, fallback_t>)
             return dynamic_cast<remove_reference_t<T>*>(base_);
         else
@@ -359,7 +359,7 @@ struct arg_non_poly {
     }
 
     template<class T>
-    remove_reference_t<T>* cast() {
+    remove_reference_t<T>* cast() const {
         if constexpr(!is_same_v<decay_t<T>, fallback_t>)
             return p_;
         else
@@ -372,7 +372,7 @@ struct arg_non_poly {
 //
 struct arg_void {
     template<class T>
-    remove_reference_t<T>* cast() { return nullptr; }
+    remove_reference_t<T>* cast() const { return nullptr; }
 };
 
 /**********************************************************************************************/
