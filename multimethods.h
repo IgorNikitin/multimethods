@@ -519,35 +519,35 @@ constexpr bool check_types() {
 
 /**********************************************************************************************/
 template<class T1, class T2, class U1, class U2>
-constexpr int check_types() {
+constexpr bool check_types() {
     return check_types<T1, U1>() &&
            check_types<T2, U2>();
 }
 
 /**********************************************************************************************/
 template<class T1, class T2, class T3, class U1, class U2, class U3>
-constexpr int check_types() {
+constexpr bool check_types() {
     return check_types<T1, U1>() &&
            check_types<T2, T3, U2, U3>();
 }
 
 /**********************************************************************************************/
 template<class T1, class T2, class T3, class T4, class U1, class U2, class U3, class U4>
-constexpr int check_types() {
+constexpr bool check_types() {
     return check_types<T1, U1>() &&
            check_types<T2, T3, T4, U2, U3, U4>();
 }
 
 /**********************************************************************************************/
 template<class T1, class T2, class T3, class T4, class T5, class U1, class U2, class U3, class U4, class U5>
-constexpr int check_types() {
+constexpr bool check_types() {
     return check_types<T1, U1>() &&
            check_types<T2, T3, T4, T5, U2, U3, U4, U5>();
 }
 
 /**********************************************************************************************/
 template<class T1, class T2, class T3, class T4, class T5, class T6, class U1, class U2, class U3, class U4, class U5, class U6>
-constexpr int check_types() {
+constexpr bool check_types() {
     return check_types<T1, U1>() &&
            check_types<T2, T3, T4, T5, T6, U2, U3, U4, U5, U6>();
 }
