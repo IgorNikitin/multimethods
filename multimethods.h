@@ -217,7 +217,7 @@
     } \
     \
     namespace mm_namespace_ ## name { \
-        const bool g_init = [] { constexpr ::multimethods::detail::sort_functions sorter(std::tuple { true
+        const bool g_init = [] { constexpr ::multimethods::detail::method_impls sorter(std::tuple { true
 
 /**********************************************************************************************/
 // Adds implementation of a method.
@@ -237,7 +237,7 @@
 //
 #define end_method \
             }); \
-            const auto methods = sorter.sort_methods<proto_t, ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>(); \
+            const auto methods = sorter.to_array<proto_t, ret_type_t, base1_t, base2_t, base3_t, base4_t, base5_t, base6_t>(); \
             \
             for(auto it: methods) \
                 if(it->is_fallback()) { \
@@ -647,23 +647,23 @@ constexpr int compare_types() {
 
 /**********************************************************************************************/
 template<class F1, class F2>
-struct compare_methods_impl;
+struct compare_functions_impl;
 
 /**********************************************************************************************/
 template<class R, class... Args1, class... Args2>
-struct compare_methods_impl<R(*)(Args1...), R(*)(Args2...)> {
+struct compare_functions_impl<R(*)(Args1...), R(*)(Args2...)> {
     static constexpr int value = compare_types<Args1..., Args2...>();
 };
 
 /**********************************************************************************************/
 template<>
-struct compare_methods_impl<void, void> {
+struct compare_functions_impl<void, void> {
     static constexpr int value = 0;
 };
 
 /**********************************************************************************************/
 template<class F1, class F2>
-struct compare_methods final : public compare_methods_impl<F1, F2> {
+struct compare_functions final : public compare_functions_impl<F1, F2> {
 };
 
 
@@ -1011,33 +1011,30 @@ struct method_result final : public method_result_impl<T> {
 
 /**********************************************************************************************/
 template<std::size_t N, class T = void, class... Args>
-struct get_type_by_index {
-    using type = typename get_type_by_index<N - 1, Args...>::type;
+struct nth_type {
+    using type = typename nth_type<N - 1, Args...>::type;
 };
 
 /**********************************************************************************************/
 template<class T, class... Args>
-struct get_type_by_index<0, T, Args...> {
+struct nth_type<0, T, Args...> {
     using type = T;
 };
 
 
 /**********************************************************************************************/
-// Helper class to sort implementations using inheritance.
+// Helper class to store and sort implementations.
 //
 template<class... Funcs>
-struct sort_functions final {
+struct method_impls final {
     const std::tuple<bool, Funcs...> funcs_;
-    constexpr explicit sort_functions( std::tuple<bool, Funcs...>&& funcs ) : funcs_(funcs) {}
+    constexpr explicit method_impls( std::tuple<bool, Funcs...>&& funcs ) : funcs_(funcs) {}
 
     static constexpr int N = sizeof...(Funcs);
     static_assert(N < 65, "Too many implementations.");
 
-    template<std::size_t N>
-    using func_type_t = typename get_type_by_index<N, Funcs...>::type;
-
     #define MM_FUNC_TYPE(I) \
-        using F ## I = func_type_t<((I) < N ? (I) : 0)>
+        using F ## I = typename nth_type<((I) < N ? (I) : 0), Funcs...>::type
 
     MM_FUNC_TYPE(0); MM_FUNC_TYPE(1); MM_FUNC_TYPE(2); MM_FUNC_TYPE(3);
     MM_FUNC_TYPE(4); MM_FUNC_TYPE(5); MM_FUNC_TYPE(6); MM_FUNC_TYPE(7);
@@ -1058,11 +1055,11 @@ struct sort_functions final {
 
     #undef MM_FUNC_TYPE
 
-    // Predicate function to sort methods
+    // Predicate function to sort functions
     template<class A>
     static constexpr bool pred_b(int b) {
         #define MM_CASE_B(I) \
-            if(b == (I)) return compare_methods<A, F ## I>::value < 0;
+            if(b == (I)) return compare_functions<A, F ## I>::value < 0;
 
         MM_CASE_B(0); MM_CASE_B(1); MM_CASE_B(2); MM_CASE_B(3);
         MM_CASE_B(4); MM_CASE_B(5); MM_CASE_B(6); MM_CASE_B(7);
@@ -1086,20 +1083,20 @@ struct sort_functions final {
         return false;
     }
 
-    // Sorts methods and returns vector with instances of 'abstract_method'
+    // Sorts functions and returns array with instances of 'abstract_method'
     // TODO(I.N.): constexpr
     template<class TP, class TR, class BR1, class BR2, class BR3, class BR4, class BR5, class BR6>
-    auto sort_methods() const {
+    auto to_array() const {
         // Use indexes cause we cannot sort tuple itself
         array<int, N> indexes {};
         for(int i = 0 ; i < N ; ++i) {
             indexes[i] = i;
         }
 
-        // Sort implementations
+        // Sort functions
         sort(indexes.begin(), indexes.end(), [](int a, int b) {
             #define MM_CASE_A(I) \
-                if(a == (I)) return sort_functions::pred_b<F ## I>(b)
+                if(a == (I)) return method_impls::pred_b<F ## I>(b)
 
             MM_CASE_A(0); MM_CASE_A(1); MM_CASE_A(2); MM_CASE_A(3);
             MM_CASE_A(4); MM_CASE_A(5); MM_CASE_A(6); MM_CASE_A(7);

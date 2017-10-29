@@ -3,6 +3,7 @@
 using namespace std;
 
 struct base1 {
+    virtual ~base1() = default;
     virtual string foo() const { return "base1"; }
     int m1_;
 };
@@ -15,7 +16,8 @@ struct base2 : virtual base1 {
 };
 
 struct base3 {
-    virtual void foo2() {};
+    virtual ~base3() = default;
+    virtual void foo2() {}
     int m3_;
 };
 

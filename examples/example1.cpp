@@ -38,8 +38,8 @@ end_method
 
 int main() {
     rpsls(paper(), scissors());
-    rpsls(lizard(), rock());
-    rpsls(spock(), spock());
+    rpsls(spock(), rock());
+    rpsls(lizard(), lizard());
     // --------------
     overlap(rectangle(), rectangle());
 
