@@ -266,7 +266,7 @@
 #define next_method throw ::multimethods::detail::try_next();
 
 /**********************************************************************************************/
-// Macro to add info used to detect class' instances
+// Macro to optimize casting of polymorphic classes
 //
 #define MM_CLASS(...) \
     public: \
@@ -316,8 +316,8 @@ using std::sort;
 using std::remove_reference_t;
 
 /**********************************************************************************************/
-struct fallback_t {}; // Special type to use as parameter of a fallback function (to detect it in a list with implementations).
-struct none_t {}; // Special type to mark non-used parameters.
+struct fallback_t {}; // Type to use as parameter of a fallback function (to detect it in a list with implementations).
+struct none_t {}; // Type to mark non-used parameters.
 
 /**********************************************************************************************/
 static inline fallback_t g_dummy_fallback;
@@ -325,7 +325,7 @@ static inline int g_class_id_counter = 0;
 
 
 /**********************************************************************************************/
-// Helper function to fast checking of class instances that used MM_CLASS macro
+// Helper function to cast of instances of class' that used MM_CLASS macro
 //
 template<class... Args>
 constexpr enable_if_t<sizeof...(Args) == 0, bool>
@@ -349,22 +349,19 @@ struct has_class_info<T, decltype((void) T::mm_class_id, 0)> : std::true_type {}
 
 
 /**********************************************************************************************/
-// An argument for polymorphic and non-const type.
+// An argument for polymorphic type.
 //
 template<class B>
 struct arg_poly {
-    B* const base_;
-
-    constexpr arg_poly()
-    : base_(nullptr) {
-    }
+    B* const base_ { nullptr };
+    constexpr arg_poly() = default;
 
     constexpr explicit arg_poly(B& v)
     : base_(&v) {
     }
 
     template<class T>
-    constexpr enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, remove_reference_t<T>*> cast() const {
+    constexpr enable_if_t<is_same_v<decay_t<T>, decay_t<B>>, B*> cast() const {
         return base_;
     }
 
@@ -390,22 +387,19 @@ struct arg_poly {
 };
 
 /**********************************************************************************************/
-// An argument for non-polymorphic and non-const type.
+// An argument for non-polymorphic type.
 //
 template<class B>
 struct arg_non_poly {
-    B* const p_;
-
-    constexpr arg_non_poly()
-    : p_(nullptr) {
-    }
+    B* const p_ { nullptr };
+    constexpr arg_non_poly() = default;
 
     constexpr explicit arg_non_poly(B& v)
     : p_(&v) {
     }
 
     template<class T>
-    constexpr remove_reference_t<T>* cast() const {
+    constexpr auto cast() const {
         remove_reference_t<T>* r;
 
         // Fallback
@@ -430,7 +424,7 @@ struct arg_void {
 };
 
 /**********************************************************************************************/
-// An argument for an implementation.
+// An argument for a method's implementation.
 //
 template<
     class B,
@@ -443,6 +437,7 @@ struct arg final : S {
     constexpr explicit arg(fallback_t /*dummy*/) {}
     constexpr explicit arg(B& v) : S(v) {}
 };
+
 
 /**********************************************************************************************/
 // Exception to skip an implementation and try next one.
