@@ -506,6 +506,7 @@ constexpr bool check_types() {
     static_assert(is_const_v<remove_reference_t<T>> == is_const_v<remove_reference_t<U>>, "Implementation cannot add/remove const to a parameter's type.");
 
     if constexpr(!is_same_v<decay_t<T>, decay_t<U>>) {
+        static_assert(is_reference_v<T>, "Need to use reference to specify a parameter's type.");
         static_assert(is_polymorphic_v<decay_t<T>> && is_base_of_v<decay_t<T>, decay_t<U>>, "Implementation can specify parameter's type, but not replace it.");
     }
 
