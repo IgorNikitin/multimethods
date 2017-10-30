@@ -56,14 +56,16 @@
         \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call()) \
+                if(auto r = (*m)->call()) { \
                     return method_result<ret_type_t>::unwrap(r); \
+                } \
             } catch(try_next&) { \
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) { \
                 return method_result<ret_type_t>::unwrap(r); \
+            } \
         } \
         \
         throw ::multimethods::not_implemented(#name ": not implemented."); \
@@ -78,14 +80,16 @@
         \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(a1)) \
+                if(auto r = (*m)->call(a1)) { \
                     return method_result<ret_type_t>::unwrap(r); \
+                } \
             } catch(try_next&) { \
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) { \
                 return method_result<ret_type_t>::unwrap(r); \
+            } \
         } \
         \
         throw ::multimethods::not_implemented(#name ": not implemented."); \
@@ -101,14 +105,16 @@
         \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(a1, a2)) \
+                if(auto r = (*m)->call(a1, a2)) { \
                     return method_result<ret_type_t>::unwrap(r); \
+                } \
             } catch(try_next&) { \
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) { \
                 return method_result<ret_type_t>::unwrap(r); \
+            } \
         } \
         \
         throw ::multimethods::not_implemented(#name ": not implemented."); \
@@ -125,14 +131,16 @@
         \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(a1, a2, a3)) \
+                if(auto r = (*m)->call(a1, a2, a3)) { \
                     return method_result<ret_type_t>::unwrap(r); \
+                } \
             } catch(try_next&) { \
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) { \
                 return method_result<ret_type_t>::unwrap(r); \
+            } \
         } \
         \
         throw ::multimethods::not_implemented(#name ": not implemented."); \
@@ -150,14 +158,16 @@
         \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(a1, a2, a3, a4)) \
+                if(auto r = (*m)->call(a1, a2, a3, a4)) { \
                     return method_result<ret_type_t>::unwrap(r); \
+                } \
             } catch(try_next&) { \
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) { \
                 return method_result<ret_type_t>::unwrap(r); \
+            } \
         } \
         \
         throw ::multimethods::not_implemented(#name ": not implemented."); \
@@ -176,14 +186,16 @@
         \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(a1, a2, a3, a4, a5)) \
+                if(auto r = (*m)->call(a1, a2, a3, a4, a5)) { \
                     return method_result<ret_type_t>::unwrap(r); \
+                } \
             } catch(try_next&) { \
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) { \
                 return method_result<ret_type_t>::unwrap(r); \
+            } \
         } \
         \
         throw ::multimethods::not_implemented(#name ": not implemented."); \
@@ -203,14 +215,16 @@
         \
         for(auto m = g_impls ; m != g_impls_end ; ++m) \
             try { \
-                if(auto r = (*m)->call(a1, a2, a3, a4, a5, a6)) \
+                if(auto r = (*m)->call(a1, a2, a3, a4, a5, a6)) { \
                     return method_result<ret_type_t>::unwrap(r); \
+                } \
             } catch(try_next&) { \
             } \
         \
         if(g_fallback) { \
-            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) \
+            if(auto r = g_fallback->call(arg<base1_t> { g_dummy_fallback })) { \
                 return method_result<ret_type_t>::unwrap(r); \
+            } \
         } \
         \
         throw ::multimethods::not_implemented(#name ": not implemented."); \
@@ -273,14 +287,16 @@
     static inline const int mm_class_id = ::multimethods::detail::g_class_id_counter++; \
     \
     virtual void* mm_cast(int n) { \
-        if(n == mm_class_id || ::multimethods::detail::match_class_id< __VA_ARGS__>(n)) \
+        if(n == mm_class_id || ::multimethods::detail::match_class_id< __VA_ARGS__>(n)) { \
             return this; \
+        } \
         return nullptr; \
     } \
     \
     virtual const void* mm_cast(int n) const { \
-        if(n == mm_class_id || ::multimethods::detail::match_class_id< __VA_ARGS__>(n)) \
+        if(n == mm_class_id || ::multimethods::detail::match_class_id< __VA_ARGS__>(n)) { \
             return this; \
+        } \
         return nullptr; \
     }
 
