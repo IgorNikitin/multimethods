@@ -1,5 +1,5 @@
-#include <multimethods.h>
 #include <iostream>
+#include <multimethods.h>
 using namespace std;
 
 struct role { virtual ~role() {} };
